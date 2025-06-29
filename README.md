@@ -27,14 +27,7 @@ This project implements a UTM (Unmanned Traffic Management) flight permission sy
    npx hardhat test
    ```
 
-4. **Deploy contracts locally:**
-
-   ```shell
-   npx hardhat node
-   npx hardhat run scripts/deploy.ts --network localhost
-   ```
-
-5. **Environment setup:**
+4. **Environment setup:**
 
    - Copy `.env.orig` to `.env` and fill in your private keys and RPC details.
    - Example:
@@ -45,9 +38,15 @@ This project implements a UTM (Unmanned Traffic Management) flight permission sy
      RPC_CHAIN_ID=your_chain_id
      ```
 
+5. **Deploy contracts locally:**
+
+   ```shell
+   npx hardhat run scripts/deploy.ts --network custom
+   ```
+
 6. **Run end-to-end tests:**
    ```shell
-   npx hardhat test scripts/live.test.ts
+   npx hardhat test scripts/live.test.ts --network custom
    ```
    This can be run after deploying the contracts. Make sure to add the following addresses to your `.env` file:
    ```
