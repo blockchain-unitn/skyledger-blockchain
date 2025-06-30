@@ -1,20 +1,19 @@
 import { ethers } from "hardhat";
 
 async function main() {
-    // Deploy MockDroneIdentityNFT contract first
-    const MockDroneIdentityNFT = await ethers.getContractFactory("MockDroneIdentityNFT");
-    const mockDroneIdentityNFT = await MockDroneIdentityNFT.deploy();
-    await mockDroneIdentityNFT.waitForDeployment();
-    const mockDroneIdentityNFTAddress = mockDroneIdentityNFT.target;
-    console.log("MockDroneIdentityNFT deployed to:", mockDroneIdentityNFTAddress);
+    
+    // Deploy DroneIdentityNFT
+    const DroneIdentityNFT = await ethers.getContractFactory("DroneIdentityNFT");
+    const droneIdentityNFT = await DroneIdentityNFT.deploy();
+    await droneIdentityNFT.waitForDeployment();
+    console.log("DroneIdentityNFT deployed to:", droneIdentityNFT.target);
 
     // Deploy RoutePermission contract
     const RoutePermission = await ethers.getContractFactory("RoutePermission");
-    const routePermission = await RoutePermission.deploy(mockDroneIdentityNFTAddress);
-
+    const routePermission = await RoutePermission.deploy(droneIdentityNFT);
     await routePermission.waitForDeployment();
-
     console.log("RoutePermission deployed to:", routePermission.target);
+
 }
 
 main().catch((error) => {

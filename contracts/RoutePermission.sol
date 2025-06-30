@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.28; // Using 0.8.28 for built-in overflow/underflow checks
+pragma solidity ^0.8.28;
 
 enum PreAuthorizationStatus {
     APPROVED,
     FAILED
 }
+
 enum ZoneType {
     RURAL,
     URBAN,
@@ -15,21 +16,17 @@ enum ZoneType {
 
 interface IDroneIdentityNFT {
     struct AuthorizedPeriod {
-        uint8[] daysWeek; // Days of week (0-6)
-        uint256 from; // Timestamp
-        uint256 to; // Timestamp
+        uint8[] daysWeek;  // Days of the week (0-6)
+        uint256 from;      // Start timestamp
+        uint256 to;        // End timestamp
     }
 
-    struct Drone {
-        string model;
-        address operatorId;
-        ZoneType[] authorizedZones;
-        AuthorizedPeriod[] authorizedPeriods;
-    }
-
-    function getDroneInfo(
-        uint256 droneId
-    ) external view returns (Drone calldata);
+    function getDronePermissions(
+        uint256 tokenId
+    ) external view returns (
+        ZoneType[] memory,
+        AuthorizedPeriod[] memory
+    );
 }
 
 contract RoutePermission {
@@ -37,7 +34,7 @@ contract RoutePermission {
 
     struct RouteCharacteristics {
         ZoneType[] zones;
-        uint256 altitudeLimit;
+        uint256 altitudeLimit; // Unused in this logic, placeholder for future use
     }
 
     struct RouteRequest {
@@ -45,7 +42,7 @@ contract RoutePermission {
         RouteCharacteristics route;
         uint256 startTime;
         uint256 endTime;
-        uint8[] daysOfWeek; // 0-6 for days
+        uint8[] daysOfWeek; // 0-6 representing days
     }
 
     struct AuthorizationResponse {
@@ -63,84 +60,87 @@ contract RoutePermission {
         droneNFT = IDroneIdentityNFT(_droneNFT);
     }
 
+    // Funzione di sola lettura che fa la validazione senza emettere eventi
     function checkRouteAuthorization(
         RouteRequest calldata request
-    ) external view returns (AuthorizationResponse memory) {
+    ) public view returns (AuthorizationResponse memory) {
         try this._validateRoute(request) {
-            return
-                AuthorizationResponse({
-                    droneId: request.droneId,
-                    preauthorizationStatus: PreAuthorizationStatus.APPROVED,
-                    reason: ""
-                });
+            return AuthorizationResponse({
+                droneId: request.droneId,
+                preauthorizationStatus: PreAuthorizationStatus.APPROVED,
+                reason: ""
+            });
         } catch Error(string memory reason) {
-            return
-                AuthorizationResponse({
-                    droneId: request.droneId,
-                    preauthorizationStatus: PreAuthorizationStatus.FAILED,
-                    reason: reason
-                });
+            return AuthorizationResponse({
+                droneId: request.droneId,
+                preauthorizationStatus: PreAuthorizationStatus.FAILED,
+                reason: reason
+            });
         } catch {
-            return
-                AuthorizationResponse({
-                    droneId: request.droneId,
-                    preauthorizationStatus: PreAuthorizationStatus.FAILED,
-                    reason: "Unknown error"
-                });
+            return AuthorizationResponse({
+                droneId: request.droneId,
+                preauthorizationStatus: PreAuthorizationStatus.FAILED,
+                reason: "Unknown error"
+            });
         }
     }
 
-    function _validateRoute(RouteRequest calldata request) external view {
-        IDroneIdentityNFT.Drone memory drone = droneNFT.getDroneInfo(
-            request.droneId
-        );
+    // Funzione esterna che emette eventi e richiama la checkRouteAuthorization
+    function requestRouteAuthorization(
+        RouteRequest calldata request
+    ) external returns (AuthorizationResponse memory) {
+        AuthorizationResponse memory resp = checkRouteAuthorization(request);
+        emit RouteAuthorizationRequested(resp.droneId, resp.preauthorizationStatus);
+        return resp;
+    }
 
-        // Check authorized zones
-        bool authorized = false;
+    // Funzione view usata internamente per validare la richiesta (lancia require se fallisce)
+    function _validateRoute(
+        RouteRequest calldata request
+    ) external view {
+        (
+            ZoneType[] memory authorizedZones,
+            IDroneIdentityNFT.AuthorizedPeriod[] memory authorizedPeriods
+        ) = droneNFT.getDronePermissions(request.droneId);
+
+        // Validate zones
         for (uint i = 0; i < request.route.zones.length; i++) {
-            authorized = false;
-            for (uint j = 0; j < drone.authorizedZones.length; j++) {
-                if (drone.authorizedZones[j] == request.route.zones[i]) {
-                    authorized = true;
+            bool zoneOk = false;
+            for (uint j = 0; j < authorizedZones.length; j++) {
+                if (request.route.zones[i] == authorizedZones[j]) {
+                    zoneOk = true;
                     break;
                 }
             }
-            require(authorized, "Drone not authorized for requested zone");
+            require(zoneOk, "Drone not authorized for requested zone");
         }
 
-        // Check authorized periods
-        authorized = false;
-        for (uint i = 0; i < drone.authorizedPeriods.length; i++) {
-            IDroneIdentityNFT.AuthorizedPeriod memory period = drone
-                .authorizedPeriods[i];
+        // Validate time period
+        bool timeOk = false;
+        for (uint i = 0; i < authorizedPeriods.length; i++) {
             if (
-                request.startTime >= period.from && request.endTime <= period.to
+                request.startTime >= authorizedPeriods[i].from &&
+                request.endTime <= authorizedPeriods[i].to
             ) {
-                authorized = true;
+                timeOk = true;
                 break;
             }
         }
+        require(timeOk, "Drone not authorized for requested time period");
 
-        require(authorized, "Drone not authorized for requested time period");
-
-        // Check days of the week
-        authorized = false;
+        // Validate days of the week
         for (uint i = 0; i < request.daysOfWeek.length; i++) {
-            for (uint j = 0; j < drone.authorizedPeriods.length; j++) {
-                IDroneIdentityNFT.AuthorizedPeriod memory period = drone
-                    .authorizedPeriods[j];
-                for (uint k = 0; k < period.daysWeek.length; k++) {
-                    if (request.daysOfWeek[i] == period.daysWeek[k]) {
-                        authorized = true;
+            bool dayOk = false;
+            for (uint j = 0; j < authorizedPeriods.length; j++) {
+                for (uint k = 0; k < authorizedPeriods[j].daysWeek.length; k++) {
+                    if (request.daysOfWeek[i] == authorizedPeriods[j].daysWeek[k]) {
+                        dayOk = true;
                         break;
                     }
                 }
-                if (authorized) break;
+                if (dayOk) break;
             }
-            require(
-                authorized,
-                "Drone not authorized for requested days of the week"
-            );
+            require(dayOk, "Drone not authorized for requested day");
         }
     }
 }

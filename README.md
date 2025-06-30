@@ -13,6 +13,7 @@ This project implements a UTM (Unmanned Traffic Management) flight permission sy
 
    ```shell
    npm install
+   npm install @openzeppelin/contracts
    ```
 
 2. **Compile contracts:**
@@ -45,14 +46,16 @@ This project implements a UTM (Unmanned Traffic Management) flight permission sy
    ```
 
 6. **Run end-to-end tests:**
+Make sure to add the following addresses to your `.env` file:
+   ```
+   DRONE_IDENTITY_NFT_ADDRESS=address_drone_identity_nft_here
+   ROUTE_PERMISSION_ADDRESS=address_route_permission_here
+   ```
+
    ```shell
    npx hardhat test scripts/live.test.ts --network custom
    ```
-   This can be run after deploying the contracts. Make sure to add the following addresses to your `.env` file:
-   ```
-   ROUTE_PERMISSION_ADDRESS=address_route_permission_here
-   MOCK_DRONE_NFT_ADDRESS=address_mock_drone_nft_here
-   ```
+   
 
 ## Additional Notes
 
@@ -65,3 +68,5 @@ This project implements a UTM (Unmanned Traffic Management) flight permission sy
 
 - SkyLedger Team
   - Andrea Ballarini
+  - Luca Claus
+  - Davide Zanolini
