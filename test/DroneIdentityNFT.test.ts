@@ -21,6 +21,7 @@ describe("DroneIdentityNFT", function () {
 
   beforeEach(async function () {
     [owner, addr1, addr2] = await ethers.getSigners();
+    
     const DroneIdentityNFTFactory = await ethers.getContractFactory("DroneIdentityNFT");
     droneNFT = (await DroneIdentityNFTFactory.deploy()) as DroneIdentityNFT;
   });

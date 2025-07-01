@@ -14,6 +14,11 @@ async function main() {
     await routePermission.waitForDeployment();
     console.log("RoutePermission deployed to:", routePermission.target);
 
+    const ViolationsAlerting = await ethers.getContractFactory("ViolationsAlerting");
+    const violationsAlerting = await ViolationsAlerting.deploy();
+    await violationsAlerting.waitForDeployment();
+    console.log("ViolationsAlerting deployed to:", violationsAlerting.target);
+
 }
 
 main().catch((error) => {

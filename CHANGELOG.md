@@ -21,3 +21,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Comprehensive `.gitignore` for build, cache, and environment files.
 - `DroneIdentityNFT` contract for creation of NFT of the drones
 - Delete `MockDroneIdentityNFT` and update `RoutePermission` contract and tests and env.orig file
+- `ViolationsAlerting` contract for the storing and alerting of unauthorized locations of drones

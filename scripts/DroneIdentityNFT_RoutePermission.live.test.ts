@@ -580,8 +580,4 @@ describe("End-to-End: Drone Registration and Route Authorization", function () {
     });
 
 
-
-
-
-
 });

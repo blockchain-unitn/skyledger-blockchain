@@ -50,10 +50,11 @@ Make sure to add the following addresses to your `.env` file:
    ```
    DRONE_IDENTITY_NFT_ADDRESS=address_drone_identity_nft_here
    ROUTE_PERMISSION_ADDRESS=address_route_permission_here
+   VIOLATIONS_ALERTING_ADDRESS=address_violations_alerting_here
    ```
 and finally:
    ```shell
-   npx hardhat test scripts/live.test.ts --network custom
+   npx hardhat test scripts/< nameOfTest >.live.test.ts --network custom
    ```
    
 
