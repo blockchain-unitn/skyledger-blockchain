@@ -3,7 +3,9 @@
 This project implements a UTM (Unmanned Traffic Management) flight permission system using Solidity smart contracts and Hardhat. It includes:
 
 - `RoutePermission` contract for drone route pre-authorization and validation.
-- `IDroneIdentityNFT` interface and `MockDroneIdentityNFT` contract for drone identity management and testing.
+- `Operator` contract for operator registration, reputation management, and token spending.
+- `ReputationToken` contract (ERC20) for tracking operator reputation in the system.
+- `DroneIdentityNFT` contract for creation of NFT of the drones
 - Hardhat configuration with TypeScript and TypeChain.
 - Example scripts for deployment and end-to-end testing.
 
@@ -13,7 +15,6 @@ This project implements a UTM (Unmanned Traffic Management) flight permission sy
 
    ```shell
    npm install
-   npm install @openzeppelin/contracts
    ```
 
 2. **Compile contracts:**
@@ -35,6 +36,7 @@ This project implements a UTM (Unmanned Traffic Management) flight permission sy
      ```
      PRIVATE_KEY_1=your_private_key_here
      PRIVATE_KEY_2=your_private_key_here
+     PRIVATE_KEY_3=your_private_key_here
      RPC_URL=your_rpc_url
      RPC_CHAIN_ID=your_chain_id
      ```
@@ -51,6 +53,8 @@ Make sure to add the following addresses to your `.env` file:
    DRONE_IDENTITY_NFT_ADDRESS=address_drone_identity_nft_here
    ROUTE_PERMISSION_ADDRESS=address_route_permission_here
    VIOLATIONS_ALERTING_ADDRESS=address_violations_alerting_here
+   REPUTATION_TOKEN_ADDRESS=address_reputation_token_here
+   OPERATOR_ADDRESS=address_operator_here
    ```
 and finally:
    ```shell

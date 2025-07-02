@@ -4,10 +4,10 @@ import * as dotenv from "dotenv";
 dotenv.config(); // Load environment variables from .env file
 import "hardhat-gas-reporter"; // Optional: For gas reporting
 
-const { PRIVATE_KEY_1, PRIVATE_KEY_2, RPC_URL, RPC_CHAIN_ID } = process.env;
-if (!PRIVATE_KEY_1 || !PRIVATE_KEY_2 || !RPC_URL || !RPC_CHAIN_ID) {
+const { PRIVATE_KEY_1, PRIVATE_KEY_2, PRIVATE_KEY_3, RPC_URL, RPC_CHAIN_ID } = process.env;
+if (!PRIVATE_KEY_1 || !PRIVATE_KEY_2 || !PRIVATE_KEY_3 || !RPC_URL || !RPC_CHAIN_ID) {
   throw new Error(
-    "Please set your PRIVATE_KEY_1, PRIVATE_KEY_2, RPC_URL, and RPC_CHAIN_ID in the .env file"
+    "Please set your PRIVATE_KEY_1, PRIVATE_KEY_2, PRIVATE_KEY_3, RPC_URL, and RPC_CHAIN_ID in the .env file"
   );
 }
 
@@ -27,7 +27,7 @@ const config: HardhatUserConfig = {
     custom: {
       url: RPC_URL,
       chainId: Number(RPC_CHAIN_ID),
-      accounts: [PRIVATE_KEY_1, PRIVATE_KEY_2], // Use the private key from .env
+      accounts: [PRIVATE_KEY_1, PRIVATE_KEY_2, PRIVATE_KEY_3], // Use the private key from .env
       allowUnlimitedContractSize: true,
       gas: 8000000,
       blockGasLimit: 8000000,
