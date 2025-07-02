@@ -26,3 +26,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Unit tests for `ReputationToken` and `Operator` contracts.
 - End-to-end test script for `Operator` and `ReputationToken` interactions on the blockchain after deploy.
 - Updated configuration to support a third account and new contract addresses.
+- `Zones` contract for storing and managing geographical zones with different types 
+- Comprehensive test suite for the `Zones` contract covering all functionality and edge cases.
+- `RouteLogging` contract for logging drone route data and flight information.
+- Complete test coverage for `RouteLogging` contract with event validation and data integrity checks.
+- Updated deployment script to include both new contracts (`Zones` and `RouteLogging`).

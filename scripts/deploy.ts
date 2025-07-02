@@ -34,6 +34,18 @@ async function main() {
   const operator = await Operator.deploy( reputationToken.target);
   await operator.waitForDeployment();
   console.log("Operator deployed to:", operator.target);
+
+  // Deploy Zones contract
+  const Zones = await ethers.getContractFactory("Zones");
+  const zones = await Zones.deploy();
+  await zones.waitForDeployment();
+  console.log("Zones deployed to:", zones.target);
+
+  // Deploy RouteLogging contract
+  const RouteLogging = await ethers.getContractFactory("RouteLogging");
+  const routeLogging = await RouteLogging.deploy();
+  await routeLogging.waitForDeployment();
+  console.log("RouteLogging deployed to:", routeLogging.target);
 }
 
 main().catch((error) => {
