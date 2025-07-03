@@ -6,10 +6,60 @@ This project implements a UTM (Unmanned Traffic Management) flight permission sy
 - `Operator` contract for operator registration, reputation management, and token spending.
 - `ReputationToken` contract (ERC20) for tracking operator reputation in the system.
 - `DroneIdentityNFT` contract for creation of NFT of the drones
+- `ViolationsAlerting` contract for storing on the blockchain the violated positions of the drones
 - Hardhat configuration with TypeScript and TypeChain.
 - Example scripts for deployment and end-to-end testing.
 
-## Main Instructions
+# Main Instructions
+
+## Creation of the avalanche network and subnet
+
+### Prerequisites
+
+Ensure you have installed:
+
+- **Go ≥ 1.18**
+- **Avalanche CLI**
+  
+Install Avalanche CLI:
+```bash
+curl -sSfL https://raw.githubusercontent.com/ava-labs/avalanche-cli/main/scripts/install.sh | sh -s
+export PATH=~/bin:$PATH >> .bashrc
+avalanche --version
+```
+### Create Avalanche L1 Blockchain
+Create blockchain configuration:
+
+```bash
+avalanche blockchain create skyLedgerBlockchain
+```
+
+Wizard choices:
+
+- Subnet-EVM
+- Proof-of-Authority
+- Get address from (NOT ewoq)
+- Use defaults for test environment
+- ID: 2578
+- Token: skyT
+
+Deploy:
+```bash
+avalanche blockchain deploy skyLedgerBlockchain --local
+```
+
+### Account Setup
+1. **Create a new network on MetaMask using your local network connection data.**
+2. **Create account key**
+```bash
+avalanche key create skyLedger1
+```
+Use the private key found in the `~/.avalanche-cli/keys/` folder to import the account into MetaMask.
+
+Test with this funded test account (for local transfers):
+```bash
+0x56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027
+```
 
 1. **Install dependencies:**
 
