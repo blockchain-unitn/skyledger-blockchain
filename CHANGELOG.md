@@ -31,3 +31,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `RouteLogging` contract for logging drone route data and flight information.
 - Complete test coverage for `RouteLogging` contract with event validation and data integrity checks.
 - Updated deployment script to include both new contracts (`Zones` and `RouteLogging`).
+
+### Changed
+
+- Enhanced `ViolationsAlerting` contract with drone registration verification through DroneIdentityNFT integration.
+- Added drone registration validation to prevent violations being reported for unregistered drones.
+- Updated `ViolationsAlerting` test suite to include comprehensive drone registration verification 

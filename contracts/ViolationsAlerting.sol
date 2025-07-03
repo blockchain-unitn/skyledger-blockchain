@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+interface IDroneIdentityNFT {
+    function ownerOf(uint256 tokenId) external view returns (address);
+    function totalSupply() external view returns (uint256);
+}
+
 contract ViolationsAlerting {
     struct Violation {
         string droneID;
@@ -9,6 +14,7 @@ contract ViolationsAlerting {
     }
 
     Violation[] public violations;
+    IDroneIdentityNFT public droneRegistry;
 
     event ViolationReported(
         string indexed droneID,
@@ -16,16 +22,68 @@ contract ViolationsAlerting {
         uint256 timestamp
     );
 
-    function reportViolation(string memory droneID, string memory position) public {
+    constructor(address _droneRegistry) {
+        droneRegistry = IDroneIdentityNFT(_droneRegistry);
+    }
+
+    modifier onlyRegisteredDrone(uint256 droneId) {
+        require(isDroneRegistered(droneId), "Drone is not registered on the blockchain");
+        _;
+    }
+
+    function isDroneRegistered(uint256 droneId) public view returns (bool) {
+        try droneRegistry.ownerOf(droneId) returns (address) {
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    function reportViolation(uint256 droneId, string memory position) public onlyRegisteredDrone(droneId) {
         uint256 currentTime = block.timestamp;
 
+        // Convert droneId to string for storage
+        string memory droneIdStr = uintToString(droneId);
+
         violations.push(Violation({
-            droneID: droneID,
+            droneID: droneIdStr,
             position: position,
             timestamp: currentTime
         }));
 
-        emit ViolationReported(droneID, position, currentTime);
+        emit ViolationReported(droneIdStr, position, currentTime);
+    }
+
+    // Helper function to convert uint to string
+    function uintToString(uint256 value) internal pure returns (string memory) {
+        if (value == 0) {
+            return "0";
+        }
+        uint256 temp = value;
+        uint256 digits;
+        while (temp != 0) {
+            digits++;
+            temp /= 10;
+        }
+        bytes memory buffer = new bytes(digits);
+        while (value != 0) {
+            digits -= 1;
+            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
+            value /= 10;
+        }
+        return string(buffer);
+    }
+
+    // Helper function to convert string to uint
+    function stringToUint(string memory s) internal pure returns (uint256) {
+        bytes memory b = bytes(s);
+        uint256 result = 0;
+        for (uint256 i = 0; i < b.length; i++) {
+            uint8 c = uint8(b[i]);
+            require(c >= 48 && c <= 57, "Invalid character in drone ID");
+            result = result * 10 + (c - 48);
+        }
+        return result;
     }
 
     function getViolationsCount() public view returns (uint256) {

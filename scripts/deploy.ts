@@ -16,7 +16,7 @@ async function main() {
   const ViolationsAlerting = await ethers.getContractFactory(
     "ViolationsAlerting"
   );
-  const violationsAlerting = await ViolationsAlerting.deploy();
+  const violationsAlerting = await ViolationsAlerting.deploy(droneIdentityNFT.target);
   await violationsAlerting.waitForDeployment();
   console.log("ViolationsAlerting deployed to:", violationsAlerting.target);
 
