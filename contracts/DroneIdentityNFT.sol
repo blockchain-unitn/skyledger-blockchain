@@ -6,14 +6,15 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 
 enum DroneType {
-    Medical,
-    Cargo,
-    Surveillance,
-    Agricultural,
-    Recreational,
-    Mapping,
-    Militar
+    MEDICAL,
+    CARGO,
+    SURVEILLANCE,
+    AGRICULTURAL,
+    RECREATIONAL,
+    MAPPING,
+    MILITAR
 }
+
 enum ZoneType {
     RURAL,
     URBAN,
@@ -22,52 +23,52 @@ enum ZoneType {
     RESTRICTED
 }
 
-struct AuthorizedPeriod {
-    uint8[] daysWeek;
-    uint256 from;
-    uint256 to;
-}
-
-struct PermissionData {
-    ZoneType[] authorizedZones;
-    AuthorizedPeriod[] authorizedPeriods;
+enum DroneStatus {
+    ACTIVE,
+    MAINTENANCE,
+    INACTIVE
 }
 
 contract DroneIdentityNFT is ERC721Enumerable, Ownable {
     struct Drone {
+        string serialNumber;
         string model;
         DroneType droneType;
         string[] certHashes;
-        string permissions;
+        ZoneType[] permittedZones;
         string[] ownerHistory;
         string maintenanceHash;
+        DroneStatus status;
     }
 
     uint256 private _tokenIds;
     mapping(uint256 => Drone) private _drones;
-    mapping(uint256 => PermissionData) private _dronePermissions;
 
     constructor() ERC721("DroneIdentityNFT", "DRONE") {}
 
     function mint(
         address to,
+        string memory serialNumber,
         string memory model,
         DroneType droneType,
         string[] memory certHashes,
-        string memory permissions,
+        ZoneType[] memory permittedZones,
         string[] memory ownerHistory,
-        string memory maintenanceHash
+        string memory maintenanceHash,
+        DroneStatus status
     ) external onlyOwner returns (uint256) {
         uint256 tokenId = _tokenIds;
         _safeMint(to, tokenId);
 
         _drones[tokenId] = Drone({
+            serialNumber: serialNumber,
             model: model,
             droneType: droneType,
             certHashes: certHashes,
-            permissions: permissions,
+            permittedZones: permittedZones,
             ownerHistory: ownerHistory,
-            maintenanceHash: maintenanceHash
+            maintenanceHash: maintenanceHash,
+            status: status
         });
 
         _tokenIds++;
@@ -79,17 +80,43 @@ contract DroneIdentityNFT is ERC721Enumerable, Ownable {
         return _drones[tokenId];
     }
 
+    function updateCertHashes(uint256 tokenId, string[] memory newCertHashes) external {
+        require(_exists(tokenId), "Drone does not exist");
+        require(ownerOf(tokenId) == msg.sender, "Caller is not the drone owner");
+        _drones[tokenId].certHashes = newCertHashes;
+    }
+
+    function updatePermittedZones(uint256 tokenId, ZoneType[] memory newZones) external {
+        require(_exists(tokenId), "Drone does not exist");
+        require(ownerOf(tokenId) == msg.sender, "Caller is not the drone owner");
+        _drones[tokenId].permittedZones = newZones;
+    }
+
+    function updateOwnerHistory(uint256 tokenId, string[] memory newOwnerHistory) external {
+        require(_exists(tokenId), "Drone does not exist");
+        require(ownerOf(tokenId) == msg.sender, "Caller is not the drone owner");
+        _drones[tokenId].ownerHistory = newOwnerHistory;
+    }
+
     function updateMaintenanceHash(uint256 tokenId, string memory newHash) external {
         require(_exists(tokenId), "Drone does not exist");
         require(ownerOf(tokenId) == msg.sender, "Caller is not the drone owner");
         _drones[tokenId].maintenanceHash = newHash;
     }
+
+    function updateStatus(uint256 tokenId, DroneStatus newStatus) external {
+        require(_exists(tokenId), "Drone does not exist");
+        require(ownerOf(tokenId) == msg.sender || owner() == msg.sender, "Caller not authorized");
+        _drones[tokenId].status = newStatus;
+    }
+
     function burnDrone(uint256 tokenId) external {
         require(_exists(tokenId), "Drone does not exist");
         require(ownerOf(tokenId) == msg.sender, "Caller is not the drone owner");
         _burn(tokenId);
         delete _drones[tokenId];
     }
+
     function getAllDrones() external view returns (uint256[] memory) {
         uint256 total = totalSupply();
         uint256[] memory tokens = new uint256[](total);
@@ -98,23 +125,4 @@ contract DroneIdentityNFT is ERC721Enumerable, Ownable {
         }
         return tokens;
     }
-    function setDronePermissions(
-    uint256 tokenId,
-    ZoneType[] memory zones,
-    AuthorizedPeriod[] memory periods
-    ) external onlyOwner {
-        require(_exists(tokenId), "Drone does not exist");
-
-        _dronePermissions[tokenId] = PermissionData({
-            authorizedZones: zones,
-            authorizedPeriods: periods
-        });
-    }
-
-    function getDronePermissions(uint256 tokenId) external view returns (ZoneType[] memory, AuthorizedPeriod[] memory) {
-        require(_exists(tokenId), "Drone does not exist");
-        PermissionData storage data = _dronePermissions[tokenId];
-        return (data.authorizedZones, data.authorizedPeriods);
-    }
-
 }
