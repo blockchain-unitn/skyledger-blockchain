@@ -10,6 +10,8 @@ contract Operator is ReentrancyGuard, AccessControl {
         bool registered;
     }
     mapping(address => OperatorInfo) public operators;
+    address[] private _allOperators;
+
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE"); // UTM Service Providers
     bytes32 public constant OWNER_ROLE = keccak256("OWNER_ROLE"); // Owner of the contract (the deployer)
     IERC20Metadata public reputationToken;
@@ -58,6 +60,7 @@ contract Operator is ReentrancyGuard, AccessControl {
     ) external payable atLeastAdmin {
         require(!operators[operator].registered, "Already registered");
         operators[operator] = OperatorInfo({registered: true});
+        _allOperators.push(operator);
         // Transfer 500 reputation tokens to the operator from the contract deployer's address
         uint256 registrationAmount = 500 * (10 ** reputationToken.decimals()); // This dynamically gets decimals
 
@@ -117,5 +120,8 @@ contract Operator is ReentrancyGuard, AccessControl {
         address operatorAddress
     ) external view returns (OperatorInfo memory) {
         return operators[operatorAddress];
+    }
+    function getAllOperators() external view returns (address[] memory) {
+        return _allOperators;
     }
 }

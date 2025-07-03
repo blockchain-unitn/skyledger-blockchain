@@ -214,4 +214,48 @@ describe("Operator", function () {
       expect(await operator.getReputation(user.address)).to.equal(0);
     });
   });
+  
+  describe("Get All Operators", function () {
+  it("Should return empty array when no operators are registered", async function () {
+    const allOperators = await operator.getAllOperators();
+    expect(allOperators.length).to.equal(0);
+  });
+
+  it("Should return all registered operators", async function () {
+    // Register multiple operators
+    await operator.registerOperator(operatorAddress.address);
+    
+    // Mint tokens to owner so they can transfer to the second operator
+    await reputationToken.mint(owner.address, ethers.parseEther("500"));
+    
+    // Register another operator
+    await operator.registerOperator(user.address);
+    
+    // Get all operators
+    const allOperators = await operator.getAllOperators();
+    
+    // Check if the array has the correct length
+    expect(allOperators.length).to.equal(2);
+    
+    // Check if the array contains both registered operators
+    expect(allOperators).to.include(operatorAddress.address);
+    expect(allOperators).to.include(user.address);
+  });
+  
+  it("Should maintain registration order", async function () {
+    // Register operators in specific order
+    await operator.registerOperator(operatorAddress.address);
+    
+    // Mint tokens to owner so they can transfer to the second operator
+    await reputationToken.mint(owner.address, ethers.parseEther("500"));
+    
+    await operator.registerOperator(user.address);
+    
+    const allOperators = await operator.getAllOperators();
+    
+    // First registered should be at index 0, second at index 1
+    expect(allOperators[0]).to.equal(operatorAddress.address);
+    expect(allOperators[1]).to.equal(user.address);
+  });
+});
 });
