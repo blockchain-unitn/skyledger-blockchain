@@ -41,6 +41,10 @@ async function main() {
   await violationsAlerting.waitForDeployment();
   console.log("VIOLATIONS_ALERTING_ADDRESS=", violationsAlerting.target);
 
+  // set the ViolationsAlerting contract as admin for the Operator contract
+  const setAdminTx = await operator.addAdmin(violationsAlerting.target);
+  await setAdminTx.wait();
+
   // Deploy Zones contract
   const Zones = await ethers.getContractFactory("Zones");
   const zones = await Zones.deploy();
