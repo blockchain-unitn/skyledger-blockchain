@@ -6,6 +6,13 @@ interface IDroneIdentityNFT {
     function totalSupply() external view returns (uint256);
 }
 
+interface IOperator {
+    function penalizeOperator(
+        address payable operator,
+        uint256 penalty
+    ) external payable;
+}
+
 contract ViolationsAlerting {
     struct Violation {
         string droneID;
@@ -15,6 +22,8 @@ contract ViolationsAlerting {
 
     Violation[] public violations;
     IDroneIdentityNFT public droneRegistry;
+    IOperator public operatorContract;
+    uint256 public penaltyAmount; // Penalty amount for each violation
 
     event ViolationReported(
         string indexed droneID,
@@ -22,8 +31,10 @@ contract ViolationsAlerting {
         uint256 timestamp
     );
 
-    constructor(address _droneRegistry) {
+    constructor(address _droneRegistry, address _operatorContract, uint256 _penaltyAmount) {
         droneRegistry = IDroneIdentityNFT(_droneRegistry);
+        operatorContract = IOperator(_operatorContract);
+        penaltyAmount = _penaltyAmount;
     }
 
     modifier onlyRegisteredDrone(uint256 droneId) {
@@ -45,6 +56,9 @@ contract ViolationsAlerting {
         // Convert droneId to string for storage
         string memory droneIdStr = uintToString(droneId);
 
+        // take the owner of the drone
+        address droneOwner = droneRegistry.ownerOf(droneId);
+
         violations.push(Violation({
             droneID: droneIdStr,
             position: position,
@@ -52,9 +66,11 @@ contract ViolationsAlerting {
         }));
 
         emit ViolationReported(droneIdStr, position, currentTime);
-    }
 
-    // Helper function to convert uint to string
+        operatorContract.penalizeOperator(payable(droneOwner), penaltyAmount);
+
+}
+
     function uintToString(uint256 value) internal pure returns (string memory) {
         if (value == 0) {
             return "0";
@@ -74,7 +90,6 @@ contract ViolationsAlerting {
         return string(buffer);
     }
 
-    // Helper function to convert string to uint
     function stringToUint(string memory s) internal pure returns (uint256) {
         bytes memory b = bytes(s);
         uint256 result = 0;
@@ -91,23 +106,20 @@ contract ViolationsAlerting {
     }
 
     function getViolation(uint256 index) public view returns (string memory, string memory, uint256) {
-        require(index < violations.length, "Indice non valido");
+        require(index < violations.length, "Invalid index");
         Violation memory v = violations[index];
         return (v.droneID, v.position, v.timestamp);
     }
 
-    // 🔹 Restituisce tutte le posizioni di un drone specifico
     function getViolationsByDrone(string memory targetDroneID) public view returns (string[] memory positions, uint256[] memory timestamps) {
         uint256 count = 0;
 
-        // Conta quante violazioni ha questo drone
         for (uint256 i = 0; i < violations.length; i++) {
             if (keccak256(bytes(violations[i].droneID)) == keccak256(bytes(targetDroneID))) {
                 count++;
             }
         }
 
-        // Alloca gli array di output
         positions = new string[](count);
         timestamps = new uint256[](count);
 
@@ -123,7 +135,6 @@ contract ViolationsAlerting {
         return (positions, timestamps);
     }
 
-    // 🔹 Restituisce tutte le violazioni (droneID + posizione + timestamp)
     function getAllViolations() public view returns (string[] memory droneIDs, string[] memory positions, uint256[] memory timestamps) {
         uint256 len = violations.length;
         droneIDs = new string[](len);

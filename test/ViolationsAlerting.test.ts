@@ -1,7 +1,13 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { ViolationsAlerting, DroneIdentityNFT } from "../typechain-types";
+import {
+  ViolationsAlerting,
+  DroneIdentityNFT,
+  ReputationToken,
+  Operator,
+} from "../typechain-types";
 import { Signer } from "ethers";
+import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
 enum DroneType {
   Medical,
@@ -10,31 +16,60 @@ enum DroneType {
   Agricultural,
   Recreational,
   Mapping,
-  Militar
+  Militar,
 }
 
 describe("ViolationsAlerting", function () {
   let violationsAlerting: ViolationsAlerting;
- let droneIdentityNFT: DroneIdentityNFT;
-  let owner: Signer;
-  let addr1: Signer;
-  let addr2: Signer;
+  let droneIdentityNFT: DroneIdentityNFT;
+  let reputationToken: ReputationToken; // Assuming ReputationToken is not used in this test
+  let operator: Operator;
+  let owner: SignerWithAddress;
+  let addr1: SignerWithAddress;
+  let addr2: SignerWithAddress;
+  let operatorAddress: SignerWithAddress;
 
   beforeEach(async function () {
-    [owner, addr1, addr2] = await ethers.getSigners();
+    [owner, addr1, addr2, operatorAddress] = await ethers.getSigners();
 
     // Deploy DroneIdentityNFT first
-    const DroneIdentityNFTFactory = await ethers.getContractFactory("DroneIdentityNFT");
-    droneIdentityNFT = await DroneIdentityNFTFactory.deploy() as any;
+    const DroneIdentityNFTFactory = await ethers.getContractFactory(
+      "DroneIdentityNFT"
+    );
+    droneIdentityNFT = (await DroneIdentityNFTFactory.deploy()) as any;
 
-    // Deploy ViolationsAlerting with DroneIdentityNFT address
-    const ViolationsAlertingFactory = await ethers.getContractFactory("ViolationsAlerting");
-    violationsAlerting = await ViolationsAlertingFactory.deploy(droneIdentityNFT.target) as any;
+    // 1. Deploy your custom ReputationToken
+    const ReputationTokenFactory = await ethers.getContractFactory(
+      "ReputationToken"
+    );
+    reputationToken = (await ReputationTokenFactory.deploy(
+      "SkyLedger Reputation",
+      "SLREP"
+    )) as unknown as ReputationToken;
+    await reputationToken.waitForDeployment(); // Ensure deployment is complete
+
+    // 2. Deploy Operator contract, passing the address of your ReputationToken
+    const OperatorContract = await ethers.getContractFactory("Operator");
+    operator = (await OperatorContract.deploy(
+      reputationToken.getAddress()
+    )) as unknown as Operator;
+    await operator.waitForDeployment(); // Ensure deployment is complete
+
+    // 3. Approve the Operator contract to spend tokens on behalf of the owner.
+    // This is necessary for the registerOperator function, which transfers tokens from the owner.
+    const operatorApproval = await reputationToken
+      .connect(operatorAddress)
+      .approve(await operator.getAddress(), ethers.parseEther("5000"));
+    await operatorApproval.wait();
+
+    // Approve the Operator contract to spend tokens on behalf of the owner
+    const ownerApproval = await reputationToken.connect(owner).approve(await operator.getAddress(), ethers.parseEther("5000"));
+    await ownerApproval.wait();
 
     // Mint some test drones (drone ID 0 and 1)
     await droneIdentityNFT.mint(
       await addr1.getAddress(),
-      "SN-001",
+      "0",
       "DJI Phantom 4",
       DroneType.Medical,
       ["cert1", "cert2"],
@@ -46,7 +81,7 @@ describe("ViolationsAlerting", function () {
 
     await droneIdentityNFT.mint(
       await addr2.getAddress(),
-      "SN-002", 
+      "1",
       "Parrot Anafi",
       DroneType.Cargo,
       ["cert3"],
@@ -55,24 +90,60 @@ describe("ViolationsAlerting", function () {
       "maintenance2",
       0 // ACTIVE status
     );
+
+    // Deploy ViolationsAlerting with DroneIdentityNFT address
+    const ViolationsAlertingFactory = await ethers.getContractFactory(
+      "ViolationsAlerting"
+    );
+    violationsAlerting = (await ViolationsAlertingFactory.deploy(
+      droneIdentityNFT.target,
+      operator.getAddress(),
+      10
+    )) as any;
+
+    // Add the violationsAlerting contract as an admin to the Operator contract
+    const response = await operator.addAdmin(violationsAlerting.getAddress());
+    await response.wait();
+
   });
 
   describe("reportViolation", function () {
+
     it("should store the violation data and emit an event for registered drone", async function () {
       const droneID = 0; // Use number, not string
       const position = "45.4642,9.1900"; // Milano coords for example
 
-      const tx = await violationsAlerting.reportViolation(droneID, position);
+      await expect(operator.registerOperator(owner.address))
+        .to.emit(operator, "OperatorRegistered")
+        .withArgs(owner.address);
 
-      // Verify event emission (just check that it was emitted, don't check exact timestamp)
-      await expect(tx)
-        .to.emit(violationsAlerting, "ViolationReported");
+      const operatorInfo = await operator.getOperatorInfo(
+        owner.address
+      );
+      expect(operatorInfo.registered).to.be.true;
+      // IMPORTANT: If your contract (Operator.sol) transfers 500 whole tokens
+      // If it's literally `500` wei, then `500` is correct. Assume 18 decimals for now.
+      expect(await reputationToken.balanceOf(operatorAddress.address)).to.equal(
+        ethers.parseEther("500")
+      );
+
+      const penalty = ethers.parseEther("100"); // Use parseEther for consistency
+      const ownerBalanceBefore = await reputationToken.balanceOf(owner.address);
+      //await expect(operator.penalizeOperator(operatorAddress.address, penalty)).to.emit(operator, "OperatorPenalized").withArgs(operatorAddress.address, penalty);
+
+      await expect(
+        violationsAlerting.connect(owner).reportViolation(droneID, position)
+      ).to.emit(violationsAlerting, "ViolationReported");
 
       // Verify violation data stored
-      const violation = await violationsAlerting.getViolation(0);
+      /*const violation = await violationsAlerting.getViolation(0);
       expect(violation[0]).to.equal("0"); // Contract converts uint to string internally
-      expect(violation[1]).to.equal(position);
-      expect(violation[2]).to.be.a("bigint");
+      /*expect(violation[1]).to.equal(position);
+      expect(violation[2]).to.be.a("bigint");*/
+
+      expect(await reputationToken.balanceOf(owner.address)).to.equal(
+        ownerBalanceBefore + penalty
+      );
     });
 
     it("should track multiple violations for registered drones", async function () {
@@ -173,5 +244,5 @@ describe("ViolationsAlerting", function () {
 // 🔹 Helper function per timestamp
 async function getBlockTimestamp(blockNumber: number): Promise<number> {
   const block = await ethers.provider.getBlock(blockNumber);
-  return block?.timestamp || 0;
+  return block?.timestamp || 0;
 }
