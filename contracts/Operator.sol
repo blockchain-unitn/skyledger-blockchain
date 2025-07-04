@@ -103,7 +103,7 @@ contract Operator is ReentrancyGuard, AccessControl {
         // Operator must approve this contract to spend their tokens before penalization
         bool success = reputationToken.transferFrom(
             operator,
-            payable(msg.sender),
+            ownerAddr, // Transfer to the owner address
             penalty
         );
         require(success, "Token transfer failed");
@@ -121,6 +121,7 @@ contract Operator is ReentrancyGuard, AccessControl {
     ) external view returns (OperatorInfo memory) {
         return operators[operatorAddress];
     }
+
     function getAllOperators() external view returns (address[] memory) {
         return _allOperators;
     }

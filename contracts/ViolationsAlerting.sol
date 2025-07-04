@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 interface IDroneIdentityNFT {
     function ownerOf(uint256 tokenId) external view returns (address);
+
     function totalSupply() external view returns (uint256);
 }
 
@@ -31,14 +32,21 @@ contract ViolationsAlerting {
         uint256 timestamp
     );
 
-    constructor(address _droneRegistry, address _operatorContract, uint256 _penaltyAmount) {
+    constructor(
+        address _droneRegistry,
+        address _operatorContract,
+        uint256 _penaltyAmount
+    ) {
         droneRegistry = IDroneIdentityNFT(_droneRegistry);
         operatorContract = IOperator(_operatorContract);
         penaltyAmount = _penaltyAmount;
     }
 
     modifier onlyRegisteredDrone(uint256 droneId) {
-        require(isDroneRegistered(droneId), "Drone is not registered on the blockchain");
+        require(
+            isDroneRegistered(droneId),
+            "Drone is not registered on the blockchain"
+        );
         _;
     }
 
@@ -50,7 +58,10 @@ contract ViolationsAlerting {
         }
     }
 
-    function reportViolation(uint256 droneId, string memory position) public onlyRegisteredDrone(droneId) {
+    function reportViolation(
+        uint256 droneId,
+        string memory position
+    ) public onlyRegisteredDrone(droneId) {
         uint256 currentTime = block.timestamp;
 
         // Convert droneId to string for storage
@@ -59,17 +70,18 @@ contract ViolationsAlerting {
         // take the owner of the drone
         address droneOwner = droneRegistry.ownerOf(droneId);
 
-        violations.push(Violation({
-            droneID: droneIdStr,
-            position: position,
-            timestamp: currentTime
-        }));
+        violations.push(
+            Violation({
+                droneID: droneIdStr,
+                position: position,
+                timestamp: currentTime
+            })
+        );
 
         emit ViolationReported(droneIdStr, position, currentTime);
 
         operatorContract.penalizeOperator(payable(droneOwner), penaltyAmount);
-
-}
+    }
 
     function uintToString(uint256 value) internal pure returns (string memory) {
         if (value == 0) {
@@ -105,17 +117,28 @@ contract ViolationsAlerting {
         return violations.length;
     }
 
-    function getViolation(uint256 index) public view returns (string memory, string memory, uint256) {
+    function getViolation(
+        uint256 index
+    ) public view returns (string memory, string memory, uint256) {
         require(index < violations.length, "Invalid index");
         Violation memory v = violations[index];
         return (v.droneID, v.position, v.timestamp);
     }
 
-    function getViolationsByDrone(string memory targetDroneID) public view returns (string[] memory positions, uint256[] memory timestamps) {
+    function getViolationsByDrone(
+        string memory targetDroneID
+    )
+        public
+        view
+        returns (string[] memory positions, uint256[] memory timestamps)
+    {
         uint256 count = 0;
 
         for (uint256 i = 0; i < violations.length; i++) {
-            if (keccak256(bytes(violations[i].droneID)) == keccak256(bytes(targetDroneID))) {
+            if (
+                keccak256(bytes(violations[i].droneID)) ==
+                keccak256(bytes(targetDroneID))
+            ) {
                 count++;
             }
         }
@@ -125,7 +148,10 @@ contract ViolationsAlerting {
 
         uint256 j = 0;
         for (uint256 i = 0; i < violations.length; i++) {
-            if (keccak256(bytes(violations[i].droneID)) == keccak256(bytes(targetDroneID))) {
+            if (
+                keccak256(bytes(violations[i].droneID)) ==
+                keccak256(bytes(targetDroneID))
+            ) {
                 positions[j] = violations[i].position;
                 timestamps[j] = violations[i].timestamp;
                 j++;
@@ -135,7 +161,15 @@ contract ViolationsAlerting {
         return (positions, timestamps);
     }
 
-    function getAllViolations() public view returns (string[] memory droneIDs, string[] memory positions, uint256[] memory timestamps) {
+    function getAllViolations()
+        public
+        view
+        returns (
+            string[] memory droneIDs,
+            string[] memory positions,
+            uint256[] memory timestamps
+        )
+    {
         uint256 len = violations.length;
         droneIDs = new string[](len);
         positions = new string[](len);

@@ -13,13 +13,6 @@ async function main() {
   await routePermission.waitForDeployment();
   console.log("RoutePermission deployed to:", routePermission.target);
 
-  const ViolationsAlerting = await ethers.getContractFactory(
-    "ViolationsAlerting"
-  );
-  const violationsAlerting = await ViolationsAlerting.deploy(droneIdentityNFT.target);
-  await violationsAlerting.waitForDeployment();
-  console.log("ViolationsAlerting deployed to:", violationsAlerting.target);
-
   // Deploy ReputationToken contract
   const ReputationToken = await ethers.getContractFactory("ReputationToken");
   const reputationToken = await ReputationToken.deploy(
@@ -31,9 +24,22 @@ async function main() {
 
   // Deploy Operator contract
   const Operator = await ethers.getContractFactory("Operator");
-  const operator = await Operator.deploy( reputationToken.target);
+  const operator = await Operator.deploy(reputationToken.target);
   await operator.waitForDeployment();
   console.log("Operator deployed to:", operator.target);
+
+  // Deploy ViolationsAlerting contract
+  const ViolationsAlerting = await ethers.getContractFactory(
+    "ViolationsAlerting"
+  );
+  const penalty = ethers.parseEther("0.1"); // Example penalty amount
+  const violationsAlerting = await ViolationsAlerting.deploy(
+    droneIdentityNFT.target,
+    operator.target,
+    penalty
+  );
+  await violationsAlerting.waitForDeployment();
+  console.log("ViolationsAlerting deployed to:", violationsAlerting.target);
 
   // Deploy Zones contract
   const Zones = await ethers.getContractFactory("Zones");
