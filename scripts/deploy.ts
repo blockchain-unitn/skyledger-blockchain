@@ -5,13 +5,13 @@ async function main() {
   const DroneIdentityNFT = await ethers.getContractFactory("DroneIdentityNFT");
   const droneIdentityNFT = await DroneIdentityNFT.deploy();
   await droneIdentityNFT.waitForDeployment();
-  console.log("DroneIdentityNFT deployed to:", droneIdentityNFT.target);
+  console.log("DRONE_IDENTITY_NFT_ADDRESS=", droneIdentityNFT.target);
 
   // Deploy RoutePermission contract
   const RoutePermission = await ethers.getContractFactory("RoutePermission");
   const routePermission = await RoutePermission.deploy(droneIdentityNFT);
   await routePermission.waitForDeployment();
-  console.log("RoutePermission deployed to:", routePermission.target);
+  console.log("ROUTE_PERMISSION_ADDRESS=", routePermission.target);
 
   // Deploy ReputationToken contract
   const ReputationToken = await ethers.getContractFactory("ReputationToken");
@@ -20,13 +20,13 @@ async function main() {
     "SLREP"
   );
   await reputationToken.waitForDeployment();
-  console.log("ReputationToken deployed to:", reputationToken.target);
+  console.log("REPUTATION_TOKEN_ADDRESS=", reputationToken.target);
 
   // Deploy Operator contract
   const Operator = await ethers.getContractFactory("Operator");
   const operator = await Operator.deploy(reputationToken.target);
   await operator.waitForDeployment();
-  console.log("Operator deployed to:", operator.target);
+  console.log("OPERATOR_ADDRESS=", operator.target);
 
   // Deploy ViolationsAlerting contract
   const ViolationsAlerting = await ethers.getContractFactory(
@@ -39,19 +39,19 @@ async function main() {
     penalty
   );
   await violationsAlerting.waitForDeployment();
-  console.log("ViolationsAlerting deployed to:", violationsAlerting.target);
+  console.log("VIOLATIONS_ALERTING_ADDRESS=", violationsAlerting.target);
 
   // Deploy Zones contract
   const Zones = await ethers.getContractFactory("Zones");
   const zones = await Zones.deploy();
   await zones.waitForDeployment();
-  console.log("Zones deployed to:", zones.target);
+  console.log("ZONES_ADDRESS=", zones.target);
 
   // Deploy RouteLogging contract
   const RouteLogging = await ethers.getContractFactory("RouteLogging");
   const routeLogging = await RouteLogging.deploy();
   await routeLogging.waitForDeployment();
-  console.log("RouteLogging deployed to:", routeLogging.target);
+  console.log("ROUTE_LOGGING_ADDRESS=", routeLogging.target);
 }
 
 main().catch((error) => {
