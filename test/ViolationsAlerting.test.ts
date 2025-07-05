@@ -134,8 +134,8 @@ describe("ViolationsAlerting", function () {
     });
 
     it("should store the violation data and emit an event for registered drone", async function () {
-      const droneID = 0; // Use number, not string
-      const position = "45.4642,9.1900"; // Milano coords for example
+      const droneID = 0;
+      const position = "45.4642,9.1900"; 
 
       // IMPORTANT: If your contract (Operator.sol) transfers 500 whole tokens
       // If it's literally `500` wei, then `500` is correct. Assume 18 decimals for now.
@@ -277,8 +277,3 @@ describe("ViolationsAlerting", function () {
   });
 });
 
-// 🔹 Helper function per timestamp
-async function getBlockTimestamp(blockNumber: number): Promise<number> {
-  const block = await ethers.provider.getBlock(blockNumber);
-  return block?.timestamp || 0;
-}

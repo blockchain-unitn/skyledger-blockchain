@@ -63,29 +63,34 @@ Test with this funded test account (for local transfers), add this account:
 ```
 and send money from the funded test account to skyLedger1.pk account.
 
+
 ## Testing and Deploying of the contracts
 
-Make sure you are the directory of the project.
+1. **Clone the repository**:
+    ```bash
+    git clone https://github.com/blockchain-unitn/skyledger-blockchain.git
+    cd skyledger-blockchain
+    ```
 
-1. **Install dependencies:**
+2. **Install dependencies:**
 
    ```shell
    npm install
    ```
 
-2. **Compile contracts:**
+3. **Compile contracts:**
 
    ```shell
    npx hardhat compile
    ```
 
-3. **Run tests:**
+4. **Run tests:**
 
    ```shell
    npx hardhat test
    ```
 
-4. **Environment setup:**
+5. **Environment setup:**
 
    - Create skyLedger2 and skyLedger3 accounts in the network.
    - Copy `.env.orig` to `.env` and fill in your private keys and RPC details.
@@ -97,13 +102,13 @@ Make sure you are the directory of the project.
      RPC_URL=your_rpc_url
      RPC_CHAIN_ID=your_chain_id
      ```
-5. **Deploy contracts in your network:**
+6. **Deploy contracts in your network:**
 
    ```shell
    npx hardhat run scripts/deploy.ts --network custom
    ```
 
-6. **Run end-to-end tests:**
+7. **Run end-to-end tests:**
 Make sure to add the following addresses to your `.env` file:
    ```
    DRONE_IDENTITY_NFT_ADDRESS=address_drone_identity_nft_here
