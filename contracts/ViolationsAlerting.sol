@@ -14,6 +14,11 @@ interface IOperator {
     ) external payable;
 }
 
+// Custom errors
+error DroneNotRegistered(uint256 droneId);
+error InvalidCharacterInDroneID(uint8 character);
+error InvalidViolationIndex(uint256 index);
+
 contract ViolationsAlerting {
     struct Violation {
         string droneID;
@@ -43,10 +48,9 @@ contract ViolationsAlerting {
     }
 
     modifier onlyRegisteredDrone(uint256 droneId) {
-        require(
-            isDroneRegistered(droneId),
-            "Drone is not registered on the blockchain"
-        );
+        if (!isDroneRegistered(droneId)) {
+            revert DroneNotRegistered(droneId);
+        }
         _;
     }
 
@@ -107,7 +111,9 @@ contract ViolationsAlerting {
         uint256 result = 0;
         for (uint256 i = 0; i < b.length; i++) {
             uint8 c = uint8(b[i]);
-            require(c >= 48 && c <= 57, "Invalid character in drone ID");
+            if (c < 48 || c > 57) {
+                revert InvalidCharacterInDroneID(c);
+            }
             result = result * 10 + (c - 48);
         }
         return result;
@@ -120,7 +126,9 @@ contract ViolationsAlerting {
     function getViolation(
         uint256 index
     ) public view returns (string memory, string memory, uint256) {
-        require(index < violations.length, "Invalid index");
+        if (index >= violations.length) {
+            revert InvalidViolationIndex(index);
+        }
         Violation memory v = violations[index];
         return (v.droneID, v.position, v.timestamp);
     }

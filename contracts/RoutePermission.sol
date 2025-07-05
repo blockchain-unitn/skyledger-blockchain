@@ -26,14 +26,26 @@ struct Drone {
 }
 
 interface IDroneIdentityNFT {
-    function getDroneData(uint256 tokenId)
-        external
-        view
-        returns (Drone memory); // <--- Ora restituisce un singolo struct Drone
+    function getDroneData(uint256 tokenId) external view returns (Drone memory);
 }
+
+error DroneNotActive();
+error NoRouteZonesSpecified();
+error DroneNotAuthorizedForZone();
 
 contract RoutePermission {
     IDroneIdentityNFT public droneNFT;
+    // log of authorization requests
+    mapping(uint256 => AuthorizationRequestLog) public authorizationLogs;
+    uint256[] public allAuthorizationRequests;
+
+    struct AuthorizationRequestLog {
+        uint256 droneId;
+        PreAuthorizationStatus preauthorizationStatus;
+        string reason;
+        uint256 timestamp;
+        RouteCharacteristics route;
+    }
 
     struct RouteCharacteristics {
         ZoneType[] zones;
@@ -60,46 +72,66 @@ contract RoutePermission {
         droneNFT = IDroneIdentityNFT(_droneNFT);
     }
 
-    function checkRouteAuthorization(RouteRequest calldata request) public view returns (AuthorizationResponse memory) {
+    function checkRouteAuthorization(
+        RouteRequest calldata request
+    ) public view returns (AuthorizationResponse memory) {
         try this._validateRoute(request) {
-            return AuthorizationResponse({
-                droneId: request.droneId,
-                preauthorizationStatus: PreAuthorizationStatus.APPROVED,
-                reason: ""
-            });
+            return
+                AuthorizationResponse({
+                    droneId: request.droneId,
+                    preauthorizationStatus: PreAuthorizationStatus.APPROVED,
+                    reason: ""
+                });
         } catch Error(string memory reason) {
-            return AuthorizationResponse({
-                droneId: request.droneId,
-                preauthorizationStatus: PreAuthorizationStatus.FAILED,
-                reason: reason
-            });
+            return
+                AuthorizationResponse({
+                    droneId: request.droneId,
+                    preauthorizationStatus: PreAuthorizationStatus.FAILED,
+                    reason: reason
+                });
         } catch {
-            return AuthorizationResponse({
-                droneId: request.droneId,
-                preauthorizationStatus: PreAuthorizationStatus.FAILED,
-                reason: "Unknown error"
-            });
+            return
+                AuthorizationResponse({
+                    droneId: request.droneId,
+                    preauthorizationStatus: PreAuthorizationStatus.FAILED,
+                    reason: "Unknown error"
+                });
         }
     }
 
-    function requestRouteAuthorization(RouteRequest calldata request) external returns (AuthorizationResponse memory) {
+    function requestRouteAuthorization(
+        RouteRequest calldata request
+    ) external returns (AuthorizationResponse memory) {
         AuthorizationResponse memory resp = checkRouteAuthorization(request);
-        emit RouteAuthorizationRequested(resp.droneId, resp.preauthorizationStatus);
+        authorizationLogs[block.timestamp] = AuthorizationRequestLog({
+            droneId: resp.droneId,
+            preauthorizationStatus: resp.preauthorizationStatus,
+            reason: resp.reason,
+            timestamp: block.timestamp,
+            route: request.route
+        });
+        allAuthorizationRequests.push(block.timestamp);
+        emit RouteAuthorizationRequested(
+            resp.droneId,
+            resp.preauthorizationStatus
+        );
         return resp;
     }
 
     function _validateRoute(RouteRequest calldata request) external view {
-
         Drone memory droneData = droneNFT.getDroneData(request.droneId);
 
         uint8 status = droneData.status;
         ZoneType[] memory permittedZones = droneData.permittedZones;
 
         // Now you can use the 'status' and 'permittedZones' variables
-        require(status == 0, "Drone is not active"); // Assuming 0 means active
+        if (status != 0) {
+            revert DroneNotActive();
+        }
 
-        require(request.route.zones.length > 0, "No route zones specified");
-
+        if (request.route.zones.length == 0) {
+            revert NoRouteZonesSpecified();
+        }
 
         for (uint i = 0; i < request.route.zones.length; i++) {
             bool zoneOk = false;
@@ -109,7 +141,30 @@ contract RoutePermission {
                     break;
                 }
             }
-            require(zoneOk, "Drone not authorized for requested zone");
+            if (!zoneOk) {
+                revert DroneNotAuthorizedForZone();
+            }
         }
+    }
+
+    function getAuthorizationLog(
+        uint256 timestamp
+    ) external view returns (AuthorizationRequestLog memory) {
+        return authorizationLogs[timestamp];
+    }
+
+    function getAllAuthorizationLogs()
+        external
+        view
+        returns (AuthorizationRequestLog[] memory)
+    {
+        uint256 logCount = allAuthorizationRequests.length;
+        AuthorizationRequestLog[] memory logs = new AuthorizationRequestLog[](
+            logCount
+        );
+        for (uint256 i = 0; i < logCount; i++) {
+            logs[i] = authorizationLogs[allAuthorizationRequests[i]];
+        }
+        return logs;
     }
 }
