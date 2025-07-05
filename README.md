@@ -3,7 +3,7 @@
 This project implements a UTM (Unmanned Traffic Management) flight permission system using Avalanche Blockchain with Solidity smart contracts and Hardhat. It includes:
 
 - `DroneIdentityNFT` contract (ERC721) for creation and management of NFTs of the drones
-- `Zone` contract for creation and management of Airzones
+- `Zones` contract for creation and management of Airzones
 - `RoutePermission` contract for drone route pre-authorization and validation.
 - `RouteLogging` contract is a smart contract for recording and managing drone flight route data.
 - `Operator` contract for operator registration, reputation management, and token spending.
@@ -61,9 +61,9 @@ Test with this funded test account (for local transfers), add this account:
 ```bash
 0x56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027
 ```
-and send money to the funded test account to skyLedger1.pk account.
+and send money from the funded test account to skyLedger1.pk account.
 
-## Deploying of the contracts
+## Testing and Deploying of the contracts
 
 Make sure you are the directory of the project.
 
@@ -87,7 +87,7 @@ Make sure you are the directory of the project.
 
 4. **Environment setup:**
 
-   - Create skyLedger2 and skyLedger3 accounts to the network.
+   - Create skyLedger2 and skyLedger3 accounts in the network.
    - Copy `.env.orig` to `.env` and fill in your private keys and RPC details.
    - Example:
      ```
