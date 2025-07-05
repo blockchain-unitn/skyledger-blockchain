@@ -1,11 +1,13 @@
 # SkyLedger BlockChain
 
-This project implements a UTM (Unmanned Traffic Management) flight permission system using Solidity smart contracts and Hardhat. It includes:
+This project implements a UTM (Unmanned Traffic Management) flight permission system using Avalanche Blockchain with Solidity smart contracts and Hardhat. It includes:
 
+- `DroneIdentityNFT` contract (ERC721) for creation and management of NFTs of the drones
+- `Zone` contract for creation and management of Airzones
 - `RoutePermission` contract for drone route pre-authorization and validation.
+- `RouteLogging` contract is a smart contract for recording and managing drone flight route data.
 - `Operator` contract for operator registration, reputation management, and token spending.
 - `ReputationToken` contract (ERC20) for tracking operator reputation in the system.
-- `DroneIdentityNFT` contract for creation of NFT of the drones
 - `ViolationsAlerting` contract for storing on the blockchain the violated positions of the drones
 - Hardhat configuration with TypeScript and TypeChain.
 - Example scripts for deployment and end-to-end testing.
@@ -19,7 +21,6 @@ This project implements a UTM (Unmanned Traffic Management) flight permission sy
 Ensure you have installed:
 
 - **Go ≥ 1.18**
-- **Avalanche CLI**
   
 Install Avalanche CLI:
 ```bash
@@ -38,7 +39,7 @@ Wizard choices:
 
 - Subnet-EVM
 - Proof-of-Authority
-- Get address from (NOT ewoq)
+- Get address from ... (NOT ewoq)
 - Use defaults for test environment
 - ID: 2578
 - Token: skyT
@@ -49,18 +50,22 @@ avalanche blockchain deploy skyLedgerBlockchain --local
 ```
 
 ### Account Setup
-1. **Create a new network on MetaMask using your local network connection data.**
+1. **Create a new network on MetaMask using your local network (RPC_URL) connection data.**
 2. **Create account key**
 ```bash
 avalanche key create skyLedger1
 ```
-Use the private key found in the `~/.avalanche-cli/keys/` folder to import the account into MetaMask.
+Use the private key 'skyLedger1.pk' found in the `~/.avalanche-cli/keys/` folder to import the account into MetaMask.
 
-Test with this funded test account (for local transfers):
+Test with this funded test account (for local transfers), add this account:
 ```bash
 0x56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027
 ```
+and send money to the funded test account to skyLedger1.pk account.
+
 ## Deploying of the contracts
+
+Make sure you are the directory of the project.
 
 1. **Install dependencies:**
 
@@ -82,6 +87,7 @@ Test with this funded test account (for local transfers):
 
 4. **Environment setup:**
 
+   - Create skyLedger2 and skyLedger3 accounts to the network.
    - Copy `.env.orig` to `.env` and fill in your private keys and RPC details.
    - Example:
      ```
@@ -91,8 +97,7 @@ Test with this funded test account (for local transfers):
      RPC_URL=your_rpc_url
      RPC_CHAIN_ID=your_chain_id
      ```
-
-5. **Deploy contracts locally:**
+5. **Deploy contracts in your network:**
 
    ```shell
    npx hardhat run scripts/deploy.ts --network custom
@@ -106,12 +111,17 @@ Make sure to add the following addresses to your `.env` file:
    VIOLATIONS_ALERTING_ADDRESS=address_violations_alerting_here
    REPUTATION_TOKEN_ADDRESS=address_reputation_token_here
    OPERATOR_ADDRESS=address_operator_here
+   ZONES_ADDRESS=address_zones_here
+   ROUTE_LOGGING_ADDRESS=address_route_logging_here
    ```
-and finally:
+
+
+## Additional step 
+
    ```shell
    npx hardhat test scripts/< nameOfTest >.live.test.ts --network custom
    ```
-   
+for testing the contracts directly in the network.
 
 ## Additional Notes
 
@@ -122,7 +132,7 @@ and finally:
 
 ## Contributors
 
-- SkyLedger Team
+- SkyLedger Team:
   - Andrea Ballarini
   - Luca Claus
   - Davide Zanolini
