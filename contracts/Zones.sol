@@ -29,6 +29,12 @@ struct Zone {
     uint256 updatedAt;        // Timestamp when zone was last updated
 }
 
+// Custom errors
+error ZoneDoesNotExist();
+error ZoneNameEmpty();
+error ZoneBoundaryTooSmall();
+error InvalidAltitudeRange();
+
 contract Zones is Ownable {
     uint256 private _zoneCounter;
     mapping(uint256 => Zone) private _zones;
@@ -50,9 +56,9 @@ contract Zones is Ownable {
         uint256 minAltitude,
         string memory description
     ) public onlyOwner returns (uint256) {
-        require(bytes(name).length > 0, "Zone name cannot be empty");
-        require(boundaries.length >= 3, "Zone must have at least 3 boundary points");
-        require(maxAltitude >= minAltitude, "Max altitude must be >= min altitude");
+        if (bytes(name).length == 0) revert ZoneNameEmpty();
+        if (boundaries.length < 3) revert ZoneBoundaryTooSmall();
+        if (maxAltitude < minAltitude) revert InvalidAltitudeRange();
 
         _zoneCounter++;
         uint256 zoneId = _zoneCounter;
@@ -88,10 +94,10 @@ contract Zones is Ownable {
         uint256 minAltitude,
         string memory description
     ) public onlyOwner {
-        require(_zones[zoneId].id != 0, "Zone does not exist");
-        require(bytes(name).length > 0, "Zone name cannot be empty");
-        require(boundaries.length >= 3, "Zone must have at least 3 boundary points");
-        require(maxAltitude >= minAltitude, "Max altitude must be >= min altitude");
+        if (_zones[zoneId].id == 0) revert ZoneDoesNotExist();
+        if (bytes(name).length == 0) revert ZoneNameEmpty();
+        if (boundaries.length < 3) revert ZoneBoundaryTooSmall();
+        if (maxAltitude < minAltitude) revert InvalidAltitudeRange();
 
         Zone storage zone = _zones[zoneId];
         zone.name = name;
@@ -110,7 +116,7 @@ contract Zones is Ownable {
     }
 
     function setZoneStatus(uint256 zoneId, bool isActive) public onlyOwner {
-        require(_zones[zoneId].id != 0, "Zone does not exist");
+        if (_zones[zoneId].id == 0) revert ZoneDoesNotExist();
         
         _zones[zoneId].isActive = isActive;
         _zones[zoneId].updatedAt = block.timestamp;
@@ -119,7 +125,7 @@ contract Zones is Ownable {
     }
 
     function deleteZone(uint256 zoneId) public onlyOwner {
-        require(_zones[zoneId].id != 0, "Zone does not exist");
+        if (_zones[zoneId].id == 0) revert ZoneDoesNotExist();
         
         ZoneType zoneType = _zones[zoneId].zoneType;
         
@@ -138,7 +144,7 @@ contract Zones is Ownable {
     }
 
     function getZone(uint256 zoneId) public view returns (Zone memory) {
-        require(_zones[zoneId].id != 0, "Zone does not exist");
+        if (_zones[zoneId].id == 0) revert ZoneDoesNotExist();
         return _zones[zoneId];
     }
 
@@ -147,7 +153,7 @@ contract Zones is Ownable {
     }
 
     function getZoneBoundaries(uint256 zoneId) public view returns (Coordinates[] memory) {
-        require(_zones[zoneId].id != 0, "Zone does not exist");
+        if (_zones[zoneId].id == 0) revert ZoneDoesNotExist();
         return _zones[zoneId].boundaries;
     }
 

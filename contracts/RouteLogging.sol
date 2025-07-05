@@ -32,6 +32,14 @@ struct RouteLog {
     RouteStatus status;
 }
 
+error InvalidDroneId();
+error InvalidUTMAuthorizer();
+error ZonesRequired();
+error RouteRequired();
+error InvalidTimeRange();
+error LogDoesNotExist();
+error InvalidLimitRange();
+
 contract RouteLogging {
     event RouteLogged(
         uint256 indexed logId,
@@ -62,11 +70,11 @@ contract RouteLogging {
     }
 
     function validateLogRequest(LogRequest memory request) public pure {
-        require(request.droneId != 0, "Invalid droneId");
-        require(request.utmAuthorizer != address(0), "Invalid UTM authorizer");
-        require(request.zones.length > 0, "Zones required");
-        require(request.route.length > 0, "Route required");
-        require(request.startTime < request.endTime, "Invalid time range");
+        if (request.droneId == 0) revert InvalidDroneId();
+        if (request.utmAuthorizer == address(0)) revert InvalidUTMAuthorizer();
+        if (request.zones.length == 0) revert ZonesRequired();
+        if (request.route.length == 0) revert RouteRequired();
+        if (request.startTime >= request.endTime) revert InvalidTimeRange();
     }
 
     function logRoute(
@@ -129,17 +137,19 @@ contract RouteLogging {
 
     // Get a specific log by ID
     function getLog(uint256 logId) external view returns (RouteLog memory) {
-        require(logId < logs.length, "Log does not exist");
+        if (logId >= logs.length) revert LogDoesNotExist();
         return logs[logId];
     }
-    
+
     // Get the total number of logs
     function getLogsCount() external view returns (uint256) {
         return logs.length;
     }
 
     // Get all log IDs for a given droneId
-    function getLogsOfDrone(uint256 droneId) external view returns (uint256[] memory) {
+    function getLogsOfDrone(
+        uint256 droneId
+    ) external view returns (uint256[] memory) {
         uint256 count = 0;
         for (uint256 i = 0; i < logs.length; i++) {
             if (logs[i].droneId == droneId) {
@@ -158,12 +168,12 @@ contract RouteLogging {
 
     // Paginated version to avoid gas limit issues with large datasets
     function getLogsOfDronePaginated(
-        uint256 droneId, 
-        uint256 offset, 
+        uint256 droneId,
+        uint256 offset,
         uint256 limit
     ) external view returns (uint256[] memory logIds, uint256 total) {
-        require(limit > 0 && limit <= 100, "Invalid limit range");
-        
+        if (limit == 0 || limit > 100) revert InvalidLimitRange();
+
         // First count total matches
         uint256 count = 0;
         for (uint256 i = 0; i < logs.length; i++) {
@@ -171,21 +181,21 @@ contract RouteLogging {
                 count++;
             }
         }
-        
+
         if (count == 0 || offset >= count) {
             return (new uint256[](0), count);
         }
-        
+
         // Calculate actual return size
         uint256 returnSize = count - offset;
         if (returnSize > limit) {
             returnSize = limit;
         }
-        
+
         uint256[] memory result = new uint256[](returnSize);
         uint256 matchIndex = 0;
         uint256 resultIndex = 0;
-        
+
         for (uint256 i = 0; i < logs.length && resultIndex < returnSize; i++) {
             if (logs[i].droneId == droneId) {
                 if (matchIndex >= offset) {
@@ -194,12 +204,14 @@ contract RouteLogging {
                 matchIndex++;
             }
         }
-        
+
         return (result, count);
     }
 
     // Get all droneIds a UTM has authorized (unique)
-    function getDronesAuthorizedByUTM(address utm) external view returns (uint256[] memory) {
+    function getDronesAuthorizedByUTM(
+        address utm
+    ) external view returns (uint256[] memory) {
         uint256[] memory temp = new uint256[](logs.length);
         uint256 count = 0;
         for (uint256 i = 0; i < logs.length; i++) {
@@ -228,12 +240,12 @@ contract RouteLogging {
         address utm,
         uint256 maxResults
     ) external view returns (uint256[] memory, bool hasMore) {
-        require(maxResults > 0 && maxResults <= 50, "Invalid maxResults range");
-        
+        if (maxResults == 0 || maxResults > 50) revert InvalidLimitRange();
+
         uint256[] memory temp = new uint256[](maxResults);
         uint256 count = 0;
         bool reachedLimit = false;
-        
+
         for (uint256 i = 0; i < logs.length && count < maxResults; i++) {
             if (logs[i].utmAuthorizer == utm) {
                 bool exists = false;
@@ -248,7 +260,7 @@ contract RouteLogging {
                 }
             }
         }
-        
+
         // Check if there are more results beyond the limit
         if (count == maxResults) {
             for (uint256 i = 0; i < logs.length; i++) {
@@ -267,18 +279,20 @@ contract RouteLogging {
                 }
             }
         }
-        
+
         uint256[] memory result = new uint256[](count);
         for (uint256 i = 0; i < count; i++) {
             result[i] = temp[i];
         }
-        
+
         return (result, reachedLimit);
     }
 
     // Get zones of a logId
-    function getZonesOfLog(uint256 logId) external view returns (ZoneType[] memory) {
-        require(logId < logs.length, "Log does not exist");
+    function getZonesOfLog(
+        uint256 logId
+    ) external view returns (ZoneType[] memory) {
+        if (logId >= logs.length) revert LogDoesNotExist();
         return logs[logId].zones;
     }
 }

@@ -4,7 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
-## [Unreleased]
+## [1.0.1]
+
+### Changed
+
+- All contracts now use custom Solidity errors instead of `require` with string messages for revert conditions.
+- Updated `DroneIdentityNFT`, `Operator`, `RoutePermission`, `ViolationsAlerting`, `Zones`, and `RouteLogging` contracts to use custom errors for all validation and revert logic.
+- Refactored test suites to expect reverts without specific string messages, or to check for custom errors where applicable.
+
+## [1.0.0]
 
 ### Added
 

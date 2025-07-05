@@ -34,9 +34,25 @@ describe("DroneIdentityNFT contract", function () {
     expect(drone.model).to.equal("DJI Matrice 350");
     expect(drone.droneType).to.equal(0);
     expect(drone.certHashes).to.deep.equal(["certA", "certB"]);
-  expect(drone.permittedZones).to.deep.equal([0, 1])
+    expect(drone.permittedZones).to.deep.equal([0, 1]);
     expect(drone.maintenanceHash).to.equal("QmMaint1");
     expect(drone.status).to.equal(0);
+  });
+
+  it("Should revert mint if not owner", async () => {
+    await expect(
+      contract.connect(user1).mint(
+        user1.address,
+        "SN-FAIL",
+        "ModelFail",
+        0,
+        [],
+        [],
+        [],
+        "",
+        0
+      )
+    ).to.be.revertedWith("Ownable: caller is not the owner");
   });
 
   it("Should allow drone owner to burn NFT and delete data", async () => {
@@ -55,7 +71,7 @@ describe("DroneIdentityNFT contract", function () {
     await contract.connect(user1).burnDrone(0);
 
     await expect(contract.ownerOf(0)).to.be.reverted;
-    await expect(contract.getDroneData(0)).to.be.revertedWith("Drone does not exist");
+    await expect(contract.getDroneData(0)).to.be.reverted;
   });
 
   it("Should revert burn attempt by non-owner", async () => {
@@ -71,7 +87,7 @@ describe("DroneIdentityNFT contract", function () {
       0
     );
 
-    await expect(contract.connect(user2).burnDrone(0)).to.be.revertedWith("Caller is not the drone owner");
+    await expect(contract.connect(user2).burnDrone(0)).to.be.reverted;
   });
 
   it("Should return correct list of all drones", async () => {
@@ -117,54 +133,202 @@ describe("DroneIdentityNFT contract", function () {
 
     await contract.connect(user1).burnDrone(0);
 
-    await expect(contract.getDroneData(0)).to.be.revertedWith("Drone does not exist");
+    await expect(contract.getDroneData(0)).to.be.reverted;
     const tokens = await contract.getAllDrones();
     expect(tokens).to.deep.equal([]);
   });
+
   it("Should allow the drone owner to update maintenance hash", async () => {
-  await contract.mint(
-    user1.address,
-    "SN-TEST-006",
-    "DJI Phantom",
-    2, // SURVEILLANCE
-    ["certX"],
-    [0, 1],
-    ["OwnerX"],
-    "QmOldHash",
-    0 // ACTIVE
-  );
+    await contract.mint(
+      user1.address,
+      "SN-TEST-007",
+      "DJI Phantom",
+      2, // SURVEILLANCE
+      ["certX"],
+      [0, 1],
+      ["OwnerX"],
+      "QmOldHash",
+      0 // ACTIVE
+    );
 
-  // Connect as owner of drone (user1)
-  await contract.connect(user1).updateMaintenanceHash(0, "QmNewHash");
+    await contract.connect(user1).updateMaintenanceHash(0, "QmNewHash");
 
-  const drone = await contract.getDroneData(0);
-  expect(drone.maintenanceHash).to.equal("QmNewHash");
-});
-it("Should allow drone owner to change status", async () => {
-  await contract.mint(
-    user1.address,
-    "SN-TEST-007",
-    "DJI Inspire",
-    1, // CARGO
-    ["certY"],
-    [1],
-    ["OwnerY"],
-    "QmMaintY",
-    0 // ACTIVE
-  );
+    const drone = await contract.getDroneData(0);
+    expect(drone.maintenanceHash).to.equal("QmNewHash");
+  });
 
-  // Drone owner changes status to MAINTENANCE
-  await contract.connect(user1).updateStatus(0, 1); // 1 = MAINTENANCE
+  it("Should revert updateMaintenanceHash if not owner", async () => {
+    await contract.mint(
+      user1.address,
+      "SN-TEST-008",
+      "DJI Phantom",
+      2,
+      ["certX"],
+      [0, 1],
+      ["OwnerX"],
+      "QmOldHash",
+      0
+    );
+    await expect(
+      contract.connect(user2).updateMaintenanceHash(0, "QmNewHash")
+    ).to.be.reverted;
+  });
 
-  let drone = await contract.getDroneData(0);
-  expect(drone.status).to.equal(1);
+  it("Should allow drone owner to change status", async () => {
+    await contract.mint(
+      user1.address,
+      "SN-TEST-009",
+      "DJI Inspire",
+      1, // CARGO
+      ["certY"],
+      [1],
+      ["OwnerY"],
+      "QmMaintY",
+      0 // ACTIVE
+    );
 
-  // Contract owner changes status to INACTIVE
-  await contract.updateStatus(0, 2); // 2 = INACTIVE
+    // Drone owner changes status to MAINTENANCE
+    await contract.connect(user1).updateStatus(0, 1); // 1 = MAINTENANCE
 
-  drone = await contract.getDroneData(0);
-  expect(drone.status).to.equal(2);
-});
+    let drone = await contract.getDroneData(0);
+    expect(drone.status).to.equal(1);
 
+    // Contract owner changes status to INACTIVE
+    await contract.updateStatus(0, 2); // 2 = INACTIVE
 
+    drone = await contract.getDroneData(0);
+    expect(drone.status).to.equal(2);
+  });
+
+  it("Should revert updateStatus if not owner or contract owner", async () => {
+    await contract.mint(
+      user1.address,
+      "SN-TEST-010",
+      "DJI Inspire",
+      1,
+      ["certY"],
+      [1],
+      ["OwnerY"],
+      "QmMaintY",
+      0
+    );
+    await expect(
+      contract.connect(user2).updateStatus(0, 1)
+    ).to.be.reverted;
+  });
+
+  it("Should allow drone owner to update cert hashes", async () => {
+    await contract.mint(
+      user1.address,
+      "SN-TEST-011",
+      "Model Cert",
+      0,
+      ["cert1"],
+      [0],
+      ["Owner1"],
+      "QmMaint",
+      0
+    );
+    await contract.connect(user1).updateCertHashes(0, ["cert2", "cert3"]);
+    const drone = await contract.getDroneData(0);
+    expect(drone.certHashes).to.deep.equal(["cert2", "cert3"]);
+  });
+
+  it("Should revert updateCertHashes if not owner", async () => {
+    await contract.mint(
+      user1.address,
+      "SN-TEST-012",
+      "Model Cert",
+      0,
+      ["cert1"],
+      [0],
+      ["Owner1"],
+      "QmMaint",
+      0
+    );
+    await expect(
+      contract.connect(user2).updateCertHashes(0, ["cert2"])
+    ).to.be.reverted;
+  });
+
+  it("Should allow drone owner to update permitted zones", async () => {
+    await contract.mint(
+      user1.address,
+      "SN-TEST-013",
+      "Model Zone",
+      0,
+      ["cert1"],
+      [0],
+      ["Owner1"],
+      "QmMaint",
+      0
+    );
+    await contract.connect(user1).updatePermittedZones(0, [1, 2]);
+    const drone = await contract.getDroneData(0);
+    expect(drone.permittedZones).to.deep.equal([1, 2]);
+  });
+
+  it("Should revert updatePermittedZones if not owner", async () => {
+    await contract.mint(
+      user1.address,
+      "SN-TEST-014",
+      "Model Zone",
+      0,
+      ["cert1"],
+      [0],
+      ["Owner1"],
+      "QmMaint",
+      0
+    );
+    await expect(
+      contract.connect(user2).updatePermittedZones(0, [1])
+    ).to.be.reverted;
+  });
+
+  it("Should allow drone owner to update owner history", async () => {
+    await contract.mint(
+      user1.address,
+      "SN-TEST-015",
+      "Model Owner",
+      0,
+      ["cert1"],
+      [0],
+      ["Owner1"],
+      "QmMaint",
+      0
+    );
+    await contract.connect(user1).updateOwnerHistory(0, ["Owner1", "Owner2"]);
+    const drone = await contract.getDroneData(0);
+    expect(drone.ownerHistory).to.deep.equal(["Owner1", "Owner2"]);
+  });
+
+  it("Should revert updateOwnerHistory if not owner", async () => {
+    await contract.mint(
+      user1.address,
+      "SN-TEST-016",
+      "Model Owner",
+      0,
+      ["cert1"],
+      [0],
+      ["Owner1"],
+      "QmMaint",
+      0
+    );
+    await expect(
+      contract.connect(user2).updateOwnerHistory(0, ["Owner2"])
+    ).to.be.reverted;
+  });
+
+  it("Should revert getDroneData if drone does not exist", async () => {
+    await expect(contract.getDroneData(999)).to.be.reverted;
+  });
+
+  it("Should revert update functions if drone does not exist", async () => {
+    await expect(contract.updateCertHashes(999, ["x"])).to.be.reverted;
+    await expect(contract.updatePermittedZones(999, [1])).to.be.reverted;
+    await expect(contract.updateOwnerHistory(999, ["x"])).to.be.reverted;
+    await expect(contract.updateMaintenanceHash(999, "x")).to.be.reverted;
+    await expect(contract.updateStatus(999, 1)).to.be.reverted;
+    await expect(contract.connect(user1).burnDrone(999)).to.be.reverted;
+  });
 });

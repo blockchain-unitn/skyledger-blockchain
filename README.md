@@ -108,26 +108,6 @@ and send money from the funded test account to skyLedger1.pk account.
    npx hardhat run scripts/deploy.ts --network custom
    ```
 
-7. **Run end-to-end tests:**
-Make sure to add the following addresses to your `.env` file:
-   ```
-   DRONE_IDENTITY_NFT_ADDRESS=address_drone_identity_nft_here
-   ROUTE_PERMISSION_ADDRESS=address_route_permission_here
-   VIOLATIONS_ALERTING_ADDRESS=address_violations_alerting_here
-   REPUTATION_TOKEN_ADDRESS=address_reputation_token_here
-   OPERATOR_ADDRESS=address_operator_here
-   ZONES_ADDRESS=address_zones_here
-   ROUTE_LOGGING_ADDRESS=address_route_logging_here
-   ```
-
-
-## Additional step 
-
-   ```shell
-   npx hardhat test scripts/< nameOfTest >.live.test.ts --network custom
-   ```
-for testing the contracts directly in the network.
-
 ## Additional Notes
 
 - Contracts are located in the `contracts/` directory.
