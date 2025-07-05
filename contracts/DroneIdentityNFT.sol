@@ -29,6 +29,10 @@ enum DroneStatus {
     INACTIVE
 }
 
+error DroneDoesNotExist();
+error CallerIsNotDroneOwner();
+error CallerNotAuthorized();
+
 contract DroneIdentityNFT is ERC721Enumerable, Ownable {
     struct Drone {
         string serialNumber;
@@ -76,43 +80,43 @@ contract DroneIdentityNFT is ERC721Enumerable, Ownable {
     }
 
     function getDroneData(uint256 tokenId) external view returns (Drone memory) {
-        require(_exists(tokenId), "Drone does not exist");
+        if (!_exists(tokenId)) revert DroneDoesNotExist();
         return _drones[tokenId];
     }
 
     function updateCertHashes(uint256 tokenId, string[] memory newCertHashes) external {
-        require(_exists(tokenId), "Drone does not exist");
-        require(ownerOf(tokenId) == msg.sender, "Caller is not the drone owner");
+        if (!_exists(tokenId)) revert DroneDoesNotExist();
+        if (ownerOf(tokenId) != msg.sender) revert CallerIsNotDroneOwner();
         _drones[tokenId].certHashes = newCertHashes;
     }
 
     function updatePermittedZones(uint256 tokenId, ZoneType[] memory newZones) external {
-        require(_exists(tokenId), "Drone does not exist");
-        require(ownerOf(tokenId) == msg.sender, "Caller is not the drone owner");
+        if (!_exists(tokenId)) revert DroneDoesNotExist();
+        if (ownerOf(tokenId) != msg.sender) revert CallerIsNotDroneOwner();
         _drones[tokenId].permittedZones = newZones;
     }
 
     function updateOwnerHistory(uint256 tokenId, string[] memory newOwnerHistory) external {
-        require(_exists(tokenId), "Drone does not exist");
-        require(ownerOf(tokenId) == msg.sender, "Caller is not the drone owner");
+        if (!_exists(tokenId)) revert DroneDoesNotExist();
+        if (ownerOf(tokenId) != msg.sender) revert CallerIsNotDroneOwner();
         _drones[tokenId].ownerHistory = newOwnerHistory;
     }
 
     function updateMaintenanceHash(uint256 tokenId, string memory newHash) external {
-        require(_exists(tokenId), "Drone does not exist");
-        require(ownerOf(tokenId) == msg.sender, "Caller is not the drone owner");
+        if (!_exists(tokenId)) revert DroneDoesNotExist();
+        if (ownerOf(tokenId) != msg.sender) revert CallerIsNotDroneOwner();
         _drones[tokenId].maintenanceHash = newHash;
     }
 
     function updateStatus(uint256 tokenId, DroneStatus newStatus) external {
-        require(_exists(tokenId), "Drone does not exist");
-        require(ownerOf(tokenId) == msg.sender || owner() == msg.sender, "Caller not authorized");
+        if (!_exists(tokenId)) revert DroneDoesNotExist();
+        if (ownerOf(tokenId) != msg.sender && owner() != msg.sender) revert CallerNotAuthorized();
         _drones[tokenId].status = newStatus;
     }
 
     function burnDrone(uint256 tokenId) external {
-        require(_exists(tokenId), "Drone does not exist");
-        require(ownerOf(tokenId) == msg.sender, "Caller is not the drone owner");
+        if (!_exists(tokenId)) revert DroneDoesNotExist();
+        if (ownerOf(tokenId) != msg.sender) revert CallerIsNotDroneOwner();
         _burn(tokenId);
         delete _drones[tokenId];
     }

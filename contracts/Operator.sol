@@ -5,6 +5,15 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
+// Custom errors
+error NotRegistered();
+error NoSkyTokensSent();
+error TokenTransferFailed();
+error NotAdminOrOwner();
+error NotOwner();
+error AlreadyRegistered();
+error SelfRemovalNotAllowed();
+
 contract Operator is ReentrancyGuard, AccessControl {
     struct OperatorInfo {
         bool registered;
@@ -22,20 +31,26 @@ contract Operator is ReentrancyGuard, AccessControl {
     event OperatorPenalized(address indexed operator, uint256 penalty);
 
     modifier atLeastAdmin() {
-        require(
-            hasRole(ADMIN_ROLE, msg.sender) || hasRole(OWNER_ROLE, msg.sender),
-            "Only admin or owner"
-        );
+        if (
+            !(hasRole(ADMIN_ROLE, msg.sender) ||
+                hasRole(OWNER_ROLE, msg.sender))
+        ) {
+            revert NotAdminOrOwner();
+        }
         _;
     }
 
     modifier onlyOwner() {
-        require(hasRole(OWNER_ROLE, msg.sender), "Only owner");
+        if (!hasRole(OWNER_ROLE, msg.sender)) {
+            revert NotOwner();
+        }
         _;
     }
 
     modifier onlyRegistered() {
-        require(operators[msg.sender].registered, "Not registered");
+        if (!operators[msg.sender].registered) {
+            revert NotRegistered();
+        }
         _;
     }
 
@@ -51,27 +66,32 @@ contract Operator is ReentrancyGuard, AccessControl {
     }
 
     function removeAdmin(address adminToRemove) external onlyOwner {
-        require(adminToRemove != msg.sender, "Cannot remove self");
+        if (adminToRemove == msg.sender) {
+            revert SelfRemovalNotAllowed();
+        }
         revokeRole(ADMIN_ROLE, adminToRemove);
     }
 
     function registerOperator(
         address payable operator
     ) external payable atLeastAdmin {
-        require(!operators[operator].registered, "Already registered");
+        if (operators[operator].registered) {
+            revert AlreadyRegistered();
+        }
         operators[operator] = OperatorInfo({registered: true});
         _allOperators.push(operator);
         // Transfer 500 reputation tokens to the operator from the contract deployer's address
         uint256 registrationAmount = 500 * (10 ** reputationToken.decimals()); // This dynamically gets decimals
 
-        require(
-            reputationToken.transferFrom(
+        if (
+            !reputationToken.transferFrom(
                 ownerAddr,
                 operator,
                 registrationAmount
-            ),
-            "Token transfer failed. Make sure the owner has enough tokens and has approved this contract."
-        );
+            )
+        ) {
+            revert TokenTransferFailed();
+        }
         emit OperatorRegistered(operator);
     }
 
@@ -80,11 +100,13 @@ contract Operator is ReentrancyGuard, AccessControl {
     // Send native skyT to the owner address
     function spendTokens() public payable nonReentrant {
         // Ensure the caller is a registered operator
-        require(operators[msg.sender].registered, "Not registered");
+        if (!operators[msg.sender].registered) revert NotRegistered();
         // Ensure the caller has sent enough skyTokens
-        require(msg.value > 0, "Must send skyTokens");
+        if (msg.value == 0) revert NoSkyTokensSent();
         (bool success, ) = ownerAddr.call{value: msg.value}("Spent SkyT");
-        require(success, "Failed to send skyTokens");
+        if (!success) {
+            revert TokenTransferFailed();
+        }
         emit Sent(msg.sender, msg.value);
     }
 
@@ -93,20 +115,24 @@ contract Operator is ReentrancyGuard, AccessControl {
         address payable operator,
         uint256 penalty
     ) external payable atLeastAdmin nonReentrant {
-        require(operators[operator].registered, "Not registered");
-        require(penalty > 0, "Penalty must be greater than zero");
-        // Ensure the operator has enough reputation tokens to cover the penalty
-        require(
-            reputationToken.balanceOf(operator) >= penalty,
-            "Insufficient reputation tokens"
-        );
+        if (!operators[operator].registered) {
+            revert NotRegistered();
+        }
+        if (penalty == 0) {
+            revert TokenTransferFailed();
+        }
+        if (reputationToken.balanceOf(operator) < penalty) {
+            revert TokenTransferFailed();
+        }
         // Operator must approve this contract to spend their tokens before penalization
         bool success = reputationToken.transferFrom(
             operator,
             ownerAddr, // Transfer to the owner address
             penalty
         );
-        require(success, "Token transfer failed");
+        if (!success) {
+            revert TokenTransferFailed();
+        }
         emit OperatorPenalized(operator, penalty);
     }
 
