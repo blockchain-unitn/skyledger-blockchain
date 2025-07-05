@@ -60,7 +60,7 @@ describe("RouteLogging", function () {
             }
         });
         expect(events.length).to.be.greaterThan(0);
-        
+
         const parsedEvent = routeLogging.interface.parseLog(events[0]);
         expect(parsedEvent.name).to.equal("RouteLogged");
         expect(parsedEvent.args.droneId).to.equal(1);
@@ -98,7 +98,65 @@ describe("RouteLogging", function () {
                 endTime,
                 RouteStatus.NORMAL
             )
-        ).to.be.reverted;
+        ).to.be.revertedWith("Invalid droneId");
+    });
+
+    it("should revert if logRoute is called with empty zones", async function () {
+        const startPoint = { latitude: 1, longitude: 1 };
+        const endPoint = { latitude: 2, longitude: 2 };
+        const route = [startPoint, endPoint];
+        await expect(
+            routeLogging.logRoute(
+                1,
+                owner.address,
+                [],
+                startPoint,
+                endPoint,
+                route,
+                1,
+                2,
+                RouteStatus.NORMAL
+            )
+        ).to.be.revertedWith("Zones required");
+    });
+
+    it("should revert if logRoute is called with empty route", async function () {
+        const startPoint = { latitude: 1, longitude: 1 };
+        const endPoint = { latitude: 2, longitude: 2 };
+        const zones = [ZoneType.RURAL];
+        await expect(
+            routeLogging.logRoute(
+                1,
+                owner.address,
+                zones,
+                startPoint,
+                endPoint,
+                [],
+                1,
+                2,
+                RouteStatus.NORMAL
+            )
+        ).to.be.revertedWith("Route required");
+    });
+
+    it("should revert if logRoute is called with invalid time range", async function () {
+        const startPoint = { latitude: 1, longitude: 1 };
+        const endPoint = { latitude: 2, longitude: 2 };
+        const zones = [ZoneType.RURAL];
+        const route = [startPoint, endPoint];
+        await expect(
+            routeLogging.logRoute(
+                1,
+                owner.address,
+                zones,
+                startPoint,
+                endPoint,
+                route,
+                10,
+                5,
+                RouteStatus.NORMAL
+            )
+        ).to.be.revertedWith("Invalid time range");
     });
 
     it("should return the correct logs count", async function () {
@@ -140,6 +198,30 @@ describe("RouteLogging", function () {
         expect(logIds2.map((id: any) => Number(id))).to.deep.equal([2]);
     });
 
+    it("should return paginated log IDs for a given drone", async function () {
+        const zones = [ZoneType.RURAL];
+        const startPoint = { latitude: 1, longitude: 1 };
+        const endPoint = { latitude: 2, longitude: 2 };
+        const route = [startPoint, endPoint];
+        // Log 5 routes for droneId 1
+        for (let i = 0; i < 5; i++) {
+            await routeLogging.logRoute(1, owner.address, zones, startPoint, endPoint, route, i + 1, i + 2, RouteStatus.NORMAL);
+        }
+        // Log 2 routes for droneId 2
+        for (let i = 0; i < 2; i++) {
+            await routeLogging.logRoute(2, owner.address, zones, startPoint, endPoint, route, i + 10, i + 11, RouteStatus.NORMAL);
+        }
+        // Paginate
+        const [logIds, total] = await routeLogging.getLogsOfDronePaginated(1, 1, 2);
+        expect(total).to.equal(5);
+        expect(logIds.map((id: any) => Number(id))).to.deep.equal([1, 2]);
+    });
+
+    it("should revert getLogsOfDronePaginated with invalid limit", async function () {
+        await expect(routeLogging.getLogsOfDronePaginated(1, 0, 0)).to.be.revertedWith("Invalid limit range");
+        await expect(routeLogging.getLogsOfDronePaginated(1, 0, 101)).to.be.revertedWith("Invalid limit range");
+    });
+
     it("should return all unique drones authorized by a UTM", async function () {
         const zones = [ZoneType.RURAL];
         const startPoint = { latitude: 1, longitude: 1 };
@@ -154,6 +236,11 @@ describe("RouteLogging", function () {
         expect(dronesByOwner.map((id: any) => Number(id)).sort()).to.deep.equal([1, 2]);
         const dronesByAddr1 = await routeLogging.getDronesAuthorizedByUTM(addr1.address);
         expect(dronesByAddr1.map((id: any) => Number(id))).to.deep.equal([3]);
+    });
+
+    it("should return an empty array if a drone has no logs", async function () {
+        const logIds = await routeLogging.getLogsOfDrone(99); // droneId 99 never logged
+        expect(logIds.length).to.equal(0);
     });
 
     it("should return the zones of a log", async function () {
@@ -171,16 +258,14 @@ describe("RouteLogging", function () {
         await expect(routeLogging.getZonesOfLog(99)).to.be.revertedWith("Log does not exist");
     });
 
-    it("should return an empty array if a drone has no logs", async function () {
-        const logIds = await routeLogging.getLogsOfDrone(99); // droneId 99 never logged
-        expect(logIds.length).to.equal(0);
+    it("should revert when getting a log that does not exist", async function () {
+        await expect(routeLogging.getLog(42)).to.be.revertedWith("Log does not exist");
     });
 
     it("should revert when getting zones of a non-existent log", async function () {
         await expect(routeLogging.getZonesOfLog(42)).to.be.revertedWith("Log does not exist");
     });
 
-    // Test safe UTM function
     it("should handle safe UTM drone query with limits", async function () {
         const zones = [ZoneType.RURAL];
         const startPoint = { latitude: 1, longitude: 1 };
