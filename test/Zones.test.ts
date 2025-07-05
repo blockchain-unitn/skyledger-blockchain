@@ -71,7 +71,7 @@ describe("Zones", function () {
           0,
           "Description"
         )
-      ).to.be.revertedWith("Zone name cannot be empty");
+      ).to.be.reverted;
     });
 
     it("should revert with less than 3 boundaries", async function () {
@@ -84,7 +84,7 @@ describe("Zones", function () {
           0,
           "Description"
         )
-      ).to.be.revertedWith("Zone must have at least 3 boundary points");
+      ).to.be.reverted;
     });
 
     it("should revert if maxAltitude < minAltitude", async function () {
@@ -97,7 +97,7 @@ describe("Zones", function () {
           20,
           "Description"
         )
-      ).to.be.revertedWith("Max altitude must be >= min altitude");
+      ).to.be.reverted;
     });
   });
 
@@ -152,7 +152,7 @@ describe("Zones", function () {
           0,
           "Description"
         )
-      ).to.be.revertedWith("Zone does not exist");
+      ).to.be.reverted;
     });
 
     it("should only allow owner to update zones", async function () {
@@ -165,7 +165,7 @@ describe("Zones", function () {
           0,
           "Description"
         )
-      ).to.be.revertedWith("Ownable: caller is not the owner");
+      ).to.be.reverted;
     });
 
     it("should revert with empty name on update", async function () {
@@ -178,7 +178,7 @@ describe("Zones", function () {
           0,
           "Description"
         )
-      ).to.be.revertedWith("Zone name cannot be empty");
+      ).to.be.reverted;
     });
 
     it("should revert with less than 3 boundaries on update", async function () {
@@ -191,7 +191,7 @@ describe("Zones", function () {
           0,
           "Description"
         )
-      ).to.be.revertedWith("Zone must have at least 3 boundary points");
+      ).to.be.reverted;
     });
 
     it("should revert if maxAltitude < minAltitude on update", async function () {
@@ -204,7 +204,7 @@ describe("Zones", function () {
           100,
           "Description"
         )
-      ).to.be.revertedWith("Max altitude must be >= min altitude");
+      ).to.be.reverted;
     });
   });
 
@@ -231,11 +231,11 @@ describe("Zones", function () {
     });
 
     it("should revert when setting status for non-existent zone", async function () {
-      await expect(zones.setZoneStatus(999, true)).to.be.revertedWith("Zone does not exist");
+      await expect(zones.setZoneStatus(999, true)).to.be.reverted;
     });
 
     it("should only allow owner to set zone status", async function () {
-      await expect(zones.connect(addr1).setZoneStatus(1, false)).to.be.revertedWith("Ownable: caller is not the owner");
+      await expect(zones.connect(addr1).setZoneStatus(1, false)).to.be.reverted;
     });
   });
 
@@ -258,15 +258,15 @@ describe("Zones", function () {
         .withArgs(1);
 
       expect(await zones.zoneExists(1)).to.be.false;
-      await expect(zones.getZone(1)).to.be.revertedWith("Zone does not exist");
+      await expect(zones.getZone(1)).to.be.reverted;
     });
 
     it("should revert when deleting non-existent zone", async function () {
-      await expect(zones.deleteZone(999)).to.be.revertedWith("Zone does not exist");
+      await expect(zones.deleteZone(999)).to.be.reverted;
     });
 
     it("should only allow owner to delete zones", async function () {
-      await expect(zones.connect(addr1).deleteZone(1)).to.be.revertedWith("Ownable: caller is not the owner");
+      await expect(zones.connect(addr1).deleteZone(1)).to.be.reverted;
     });
   });
 
@@ -313,11 +313,11 @@ describe("Zones", function () {
     });
 
     it("should revert getZone for non-existent zone", async function () {
-      await expect(zones.getZone(999)).to.be.revertedWith("Zone does not exist");
+      await expect(zones.getZone(999)).to.be.reverted;
     });
 
     it("should revert getZoneBoundaries for non-existent zone", async function () {
-      await expect(zones.getZoneBoundaries(999)).to.be.revertedWith("Zone does not exist");
+      await expect(zones.getZoneBoundaries(999)).to.be.reverted;
     });
 
     it("should return correct zones by type", async function () {

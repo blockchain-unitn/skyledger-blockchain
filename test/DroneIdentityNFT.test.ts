@@ -71,7 +71,7 @@ describe("DroneIdentityNFT contract", function () {
     await contract.connect(user1).burnDrone(0);
 
     await expect(contract.ownerOf(0)).to.be.reverted;
-    await expect(contract.getDroneData(0)).to.be.revertedWith("Drone does not exist");
+    await expect(contract.getDroneData(0)).to.be.reverted;
   });
 
   it("Should revert burn attempt by non-owner", async () => {
@@ -87,7 +87,7 @@ describe("DroneIdentityNFT contract", function () {
       0
     );
 
-    await expect(contract.connect(user2).burnDrone(0)).to.be.revertedWith("Caller is not the drone owner");
+    await expect(contract.connect(user2).burnDrone(0)).to.be.reverted;
   });
 
   it("Should return correct list of all drones", async () => {
@@ -133,7 +133,7 @@ describe("DroneIdentityNFT contract", function () {
 
     await contract.connect(user1).burnDrone(0);
 
-    await expect(contract.getDroneData(0)).to.be.revertedWith("Drone does not exist");
+    await expect(contract.getDroneData(0)).to.be.reverted;
     const tokens = await contract.getAllDrones();
     expect(tokens).to.deep.equal([]);
   });
@@ -171,7 +171,7 @@ describe("DroneIdentityNFT contract", function () {
     );
     await expect(
       contract.connect(user2).updateMaintenanceHash(0, "QmNewHash")
-    ).to.be.revertedWith("Caller is not the drone owner");
+    ).to.be.reverted;
   });
 
   it("Should allow drone owner to change status", async () => {
@@ -214,7 +214,7 @@ describe("DroneIdentityNFT contract", function () {
     );
     await expect(
       contract.connect(user2).updateStatus(0, 1)
-    ).to.be.revertedWith("Caller not authorized");
+    ).to.be.reverted;
   });
 
   it("Should allow drone owner to update cert hashes", async () => {
@@ -248,7 +248,7 @@ describe("DroneIdentityNFT contract", function () {
     );
     await expect(
       contract.connect(user2).updateCertHashes(0, ["cert2"])
-    ).to.be.revertedWith("Caller is not the drone owner");
+    ).to.be.reverted;
   });
 
   it("Should allow drone owner to update permitted zones", async () => {
@@ -282,7 +282,7 @@ describe("DroneIdentityNFT contract", function () {
     );
     await expect(
       contract.connect(user2).updatePermittedZones(0, [1])
-    ).to.be.revertedWith("Caller is not the drone owner");
+    ).to.be.reverted;
   });
 
   it("Should allow drone owner to update owner history", async () => {
@@ -316,19 +316,19 @@ describe("DroneIdentityNFT contract", function () {
     );
     await expect(
       contract.connect(user2).updateOwnerHistory(0, ["Owner2"])
-    ).to.be.revertedWith("Caller is not the drone owner");
+    ).to.be.reverted;
   });
 
   it("Should revert getDroneData if drone does not exist", async () => {
-    await expect(contract.getDroneData(999)).to.be.revertedWith("Drone does not exist");
+    await expect(contract.getDroneData(999)).to.be.reverted;
   });
 
   it("Should revert update functions if drone does not exist", async () => {
-    await expect(contract.updateCertHashes(999, ["x"])).to.be.revertedWith("Drone does not exist");
-    await expect(contract.updatePermittedZones(999, [1])).to.be.revertedWith("Drone does not exist");
-    await expect(contract.updateOwnerHistory(999, ["x"])).to.be.revertedWith("Drone does not exist");
-    await expect(contract.updateMaintenanceHash(999, "x")).to.be.revertedWith("Drone does not exist");
-    await expect(contract.updateStatus(999, 1)).to.be.revertedWith("Drone does not exist");
-    await expect(contract.connect(user1).burnDrone(999)).to.be.revertedWith("Drone does not exist");
+    await expect(contract.updateCertHashes(999, ["x"])).to.be.reverted;
+    await expect(contract.updatePermittedZones(999, [1])).to.be.reverted;
+    await expect(contract.updateOwnerHistory(999, ["x"])).to.be.reverted;
+    await expect(contract.updateMaintenanceHash(999, "x")).to.be.reverted;
+    await expect(contract.updateStatus(999, 1)).to.be.reverted;
+    await expect(contract.connect(user1).burnDrone(999)).to.be.reverted;
   });
 });

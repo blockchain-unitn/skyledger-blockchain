@@ -54,7 +54,7 @@ describe("Operator contract", function () {
     });
 
     it("Owner cannot remove self", async function () {
-      await expect(operator.removeAdmin(owner.address)).to.be.revertedWith("Cannot remove self");
+      await expect(operator.removeAdmin(owner.address)).to.be.reverted;
     });
 
     it("Admin cannot add another admin", async function () {
@@ -92,7 +92,7 @@ describe("Operator contract", function () {
 
     it("Cannot register operator twice", async function () {
       await operator.registerOperator(operatorAddr.address);
-      await expect(operator.registerOperator(operatorAddr.address)).to.be.revertedWith("Already registered");
+      await expect(operator.registerOperator(operatorAddr.address)).to.be.reverted;
     });
 
     it("Non-admin cannot register operator", async function () {
@@ -154,12 +154,65 @@ describe("Operator contract", function () {
     });
 
     it("Cannot spend tokens with zero value", async function () {
-      await expect(operator.connect(operatorAddr).spendTokens({ value: 0 })).to.be.revertedWith("Must send skyTokens");
+      await expect(operator.connect(operatorAddr).spendTokens({ value: 0 })).to.be.reverted;
     });
 
     it("Unregistered operator cannot spend tokens", async function () {
-      await expect(operator.connect(user).spendTokens({ value: ethers.parseEther("1") })).to.be.revertedWith("Not registered");
+      await expect(operator.connect(user).spendTokens({ value: ethers.parseEther("1") })).to.be.reverted;
     });
+  });
+
+  describe("Edge Cases and Custom Errors", function () {
+    beforeEach(async function () {
+      await operator.registerOperator(operatorAddr.address);
+    });
+
+    it("Should revert with NotRegistered when spendTokens is called by unregistered address", async function () {
+      await expect(operator.connect(user).spendTokens({ value: ethers.parseEther("1") }))
+        .to.be.revertedWithCustomError(operator, "NotRegistered");
+    });
+
+    it("Should revert with NoSkyTokensSent when spendTokens is called with zero value", async function () {
+      await expect(operator.connect(operatorAddr).spendTokens({ value: 0 }))
+        .to.be.revertedWithCustomError(operator, "NoSkyTokensSent");
+    });
+
+    it("Should revert with TokenTransferFailed if penalizeOperator is called with zero penalty", async function () {
+      await expect(operator.penalizeOperator(operatorAddr.address, 0))
+        .to.be.revertedWithCustomError(operator, "TokenTransferFailed");
+    });
+
+    it("Should revert with TokenTransferFailed if penalizeOperator is called with penalty greater than balance", async function () {
+      await expect(operator.penalizeOperator(operatorAddr.address, ethers.parseEther("1000")))
+        .to.be.revertedWithCustomError(operator, "TokenTransferFailed");
+    });
+
+    it("Should revert with NotRegistered if penalizeOperator is called on unregistered operator", async function () {
+      await expect(operator.penalizeOperator(user.address, ethers.parseEther("1")))
+        .to.be.revertedWithCustomError(operator, "NotRegistered");
+    });
+
+    it("Should revert with NotOwner if addAdmin is called by non-owner", async function () {
+      await expect(operator.connect(admin).addAdmin(user.address))
+        .to.be.revertedWithCustomError(operator, "NotOwner");
+    });
+
+    it("Should revert with NotOwner if removeAdmin is called by non-owner", async function () {
+      await operator.addAdmin(admin.address);
+      await expect(operator.connect(admin).removeAdmin(owner.address))
+        .to.be.revertedWithCustomError(operator, "NotOwner");
+    });
+
+    it("Should revert with SelfRemovalNotAllowed if owner tries to remove self as admin", async function () {
+      await expect(operator.removeAdmin(owner.address))
+        .to.be.revertedWithCustomError(operator, "SelfRemovalNotAllowed");
+    });
+
+    it("Should revert with AlreadyRegistered if trying to register an already registered operator", async function () {
+      await expect(operator.registerOperator(operatorAddr.address))
+        .to.be.revertedWithCustomError(operator, "AlreadyRegistered");
+    });
+    
   });
 
   describe("Penalization", function () {
@@ -180,33 +233,32 @@ describe("Operator contract", function () {
     });
 
     it("Cannot penalize unregistered operator", async function () {
-      await expect(operator.penalizeOperator(user.address, ethers.parseEther("100"))).to.be.revertedWith("Not registered");
+      await expect(operator.penalizeOperator(user.address, ethers.parseEther("100"))).to.be.reverted;
     });
 
     it("Cannot penalize with insufficient tokens", async function () {
-      await expect(operator.penalizeOperator(operatorAddr.address, ethers.parseEther("1000"))).to.be.revertedWith("Insufficient reputation tokens");
+      await expect(operator.penalizeOperator(operatorAddr.address, ethers.parseEther("1000"))).to.be.reverted;
     });
 
     it("Non-admin cannot penalize", async function () {
       await expect(operator.connect(user).penalizeOperator(operatorAddr.address, ethers.parseEther("100"))).to.be.reverted;
     });
     it("Should revert registerOperator if not enough allowance", async function () {
-      // Deploy un nuovo Operator contract SENZA chiamare approve
+      // Deploy a new Operator contract
       const OperatorFactory = await ethers.getContractFactory("Operator");
       const newOperator = await OperatorFactory.deploy(await reputationToken.getAddress());
       await newOperator.waitForDeployment();
 
-      // Prova a registrare senza approve: deve fallire
+      // Attempt to register operator without sufficient allowance
       await expect(newOperator.registerOperator(operatorAddr.address)).to.be.reverted;
     });
 
-    // E aggiungi anche un test positivo per la approve:
     it("Should allow registerOperator after approve", async function () {
       const OperatorFactory = await ethers.getContractFactory("Operator");
       const newOperator = await OperatorFactory.deploy(await reputationToken.getAddress());
       await newOperator.waitForDeployment();
 
-      // Dai l'approvazione solo ora
+      // Approve the new operator to spend tokens
       await reputationToken.connect(owner).approve(await newOperator.getAddress(), ethers.parseEther("10000"));
       await expect(newOperator.registerOperator(operatorAddr.address)).to.emit(newOperator, "OperatorRegistered");
     });
