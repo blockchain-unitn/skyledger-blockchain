@@ -77,23 +77,15 @@ and send money from the funded test account to skyLedger1.pk account.
    ```shell
    npm install
    ```
+3. **Environment setup:**
 
-3. **Compile contracts:**
-
-   ```shell
-   npx hardhat compile
-   ```
-
-4. **Run tests:**
-
-   ```shell
-   npx hardhat test
-   ```
-
-5. **Environment setup:**
-
-   - Create skyLedger2 and skyLedger3 accounts in the network.
+   - Create skyLedger2 and skyLedger3 accounts in the network and add them to metamask and send money.
    - Copy `.env.orig` to `.env` and fill in your private keys and RPC details.
+
+   ```bash
+   cp .env.orig .env
+   ```
+
    - Example:
      ```
      PRIVATE_KEY_1=your_private_key_here
@@ -102,11 +94,26 @@ and send money from the funded test account to skyLedger1.pk account.
      RPC_URL=your_rpc_url
      RPC_CHAIN_ID=your_chain_id
      ```
+
+4. **Compile contracts:**
+
+   ```shell
+   npx hardhat compile
+   ```
+
+5. **Run tests:**
+
+   ```shell
+   npx hardhat test
+   ```
+
 6. **Deploy contracts in your network:**
 
    ```shell
    npx hardhat run scripts/deploy.ts --network custom
    ```
+
+   save the contracts addresses.
 
 ## Additional Notes
 
